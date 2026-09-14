@@ -3,7 +3,7 @@
   "team_id": "contest2026_313_bianyuanxingzhe",
   "github_login": "zixuanzheng2007-stack",
   "generator": "manual-cursor-archive",
-  "source_note": "官方采集器支持 Claude Code / OpenCode / Codex / AIoT-IDE。本批为 Cursor Agent 开发全过程原始日志归档（含 openvela 母目录会话）。",
+  "source_note": "Cursor Agent transcripts, schema 1.0 + raw/",
   "sessions": [
     {
       "session_id": "6e5f1783-58c7-482e-8811-248998f1ee8c",
@@ -15,8 +15,7 @@
       "file_path": "logs/zixuanzheng2007-stack/2026-07-19/cursor__6e5f1783-58c7-482e-8811-248998f1ee8c.jsonl",
       "raw_file_path": "logs/zixuanzheng2007-stack/2026-07-19/raw/6e5f1783-58c7-482e-8811-248998f1ee8c.jsonl",
       "collection_mode": "manual-cursor-archive",
-      "health": "ok",
-      "note": "Cursor 非官方自动采集；已转竞赛 schema 并保留 raw"
+      "health": "ok"
     },
     {
       "session_id": "c06c0b41-3b5e-4e46-a14d-1a09679677b2",
@@ -28,8 +27,7 @@
       "file_path": "logs/zixuanzheng2007-stack/2026-08-06/cursor__c06c0b41-3b5e-4e46-a14d-1a09679677b2.jsonl",
       "raw_file_path": "logs/zixuanzheng2007-stack/2026-08-06/raw/c06c0b41-3b5e-4e46-a14d-1a09679677b2.jsonl",
       "collection_mode": "manual-cursor-archive",
-      "health": "ok",
-      "note": "Cursor 非官方自动采集；已转竞赛 schema 并保留 raw"
+      "health": "ok"
     },
     {
       "session_id": "df773b3a-7f00-4cb4-a0df-96892eb25e81",
@@ -41,8 +39,7 @@
       "file_path": "logs/zixuanzheng2007-stack/2026-08-06/cursor__df773b3a-7f00-4cb4-a0df-96892eb25e81.jsonl",
       "raw_file_path": "logs/zixuanzheng2007-stack/2026-08-06/raw/df773b3a-7f00-4cb4-a0df-96892eb25e81.jsonl",
       "collection_mode": "manual-cursor-archive",
-      "health": "ok",
-      "note": "Cursor 非官方自动采集；已转竞赛 schema 并保留 raw"
+      "health": "ok"
     },
     {
       "session_id": "15467f1e-a3c1-4835-9802-8f43db4984b6",
@@ -54,8 +51,7 @@
       "file_path": "logs/zixuanzheng2007-stack/2026-09-01/cursor__15467f1e-a3c1-4835-9802-8f43db4984b6.jsonl",
       "raw_file_path": "logs/zixuanzheng2007-stack/2026-09-01/raw/15467f1e-a3c1-4835-9802-8f43db4984b6.jsonl",
       "collection_mode": "manual-cursor-archive",
-      "health": "ok",
-      "note": "Cursor 非官方自动采集；已转竞赛 schema 并保留 raw"
+      "health": "ok"
     },
     {
       "session_id": "81d85e8a-bfe3-44be-b301-430c1b5adf8d",
@@ -67,21 +63,19 @@
       "file_path": "logs/zixuanzheng2007-stack/2026-09-08/cursor__81d85e8a-bfe3-44be-b301-430c1b5adf8d.jsonl",
       "raw_file_path": "logs/zixuanzheng2007-stack/2026-09-08/raw/81d85e8a-bfe3-44be-b301-430c1b5adf8d.jsonl",
       "collection_mode": "manual-cursor-archive",
-      "health": "ok",
-      "note": "Cursor 非官方自动采集；已转竞赛 schema 并保留 raw"
+      "health": "ok"
     },
     {
       "session_id": "527e9d06-d10e-4229-88aa-b522c584ff93",
       "tool": "cursor",
-      "title": "提交材料缺口与logs合规分析",
+      "title": "提交材料与文档整理",
       "started_at": "2026-09-14T00:26:00.000Z",
       "last_event_at": "2026-09-14T02:11:00.000Z",
       "event_count": 173,
       "file_path": "logs/zixuanzheng2007-stack/2026-09-14/cursor__527e9d06-d10e-4229-88aa-b522c584ff93.jsonl",
       "raw_file_path": "logs/zixuanzheng2007-stack/2026-09-14/raw/527e9d06-d10e-4229-88aa-b522c584ff93.jsonl",
       "collection_mode": "manual-cursor-archive",
-      "health": "ok",
-      "note": "Cursor 非官方自动采集；已转竞赛 schema 并保留 raw"
+      "health": "ok"
     }
   ],
   "updated_at": "2026-09-14T02:12:19.712438+00:00"
