@@ -1,3 +1,6 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright 2026 Edge Walker Team (contest2026_313_bianyuanxingzhe) */
+
 /****************************************************************************
  * 读 ai_agent config.json；goldfish 先拉起 eth0，再 posix_spawn curl
  ****************************************************************************/

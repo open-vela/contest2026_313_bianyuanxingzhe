@@ -1,3 +1,6 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright 2026 Edge Walker Team (contest2026_313_bianyuanxingzhe) */
+
 /****************************************************************************
  * 外挂 ESP AT 猫：USART3（PA24 TX / PA25 RX）→ /dev/ttyS2
  * 板上 ttyS 编号：UART1=ttyS0（控制台）、UART2=ttyS1（雷达）、UART3=ttyS2。

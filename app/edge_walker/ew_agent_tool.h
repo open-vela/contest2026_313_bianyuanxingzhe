@@ -1,3 +1,6 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright 2026 Edge Walker Team (contest2026_313_bianyuanxingzhe) */
+
 /****************************************************************************
  * Tool approach_alert — 供 ew 主动触发与 ai_agent 注册共用
  ****************************************************************************/

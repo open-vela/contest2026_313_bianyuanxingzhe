@@ -18,6 +18,13 @@ tools/putty.zip
 tools/ld2451/*.apk
 tools/ld2451/*.zip
 tools/ld2451/**/*.exe
+tools/sifli_docs/DevKit-LCD/
+tools/sifli_docs/*.zip
+tools/sifli_docs/SF32LB52-DevKit-LCD_wiki_*.md
+docs/sifli_pinout_sources/*.pdf
+docs/sifli_pinout_sources/*.asc
+docs/sifli_pinout_sources/*.png
+docs/sifli_pinout_sources/SF32LB52-DevKit-LCD_wiki_*.md
 tools/drivers/**
 tools/vmware/**
 
