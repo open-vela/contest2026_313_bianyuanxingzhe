@@ -10,38 +10,62 @@ login = "zixuanzheng2007-stack"
 team = "contest2026_313_bianyuanxingzhe"
 logs_root = Path(r"e:\openvela\contest2026_313_bianyuanxingzhe\logs") / login
 
+TRANSCRIPTS = Path(
+    r"C:\Users\15568\.cursor\projects"
+    r"\e-openvela-contest2026-313-bianyuanxingzhe\agent-transcripts"
+)
+OPENVELA_TRANSCRIPTS = Path(
+    r"C:\Users\15568\.cursor\projects\e-openvela\agent-transcripts"
+)
+
 sessions = [
     {
         "id": "6e5f1783-58c7-482e-8811-248998f1ee8c",
-        "src": Path(
-            r"C:\Users\15568\.cursor\projects\e-openvela\agent-transcripts"
-            r"\6e5f1783-58c7-482e-8811-248998f1ee8c"
-            r"\6e5f1783-58c7-482e-8811-248998f1ee8c.jsonl"
-        ),
+        "src": OPENVELA_TRANSCRIPTS
+        / "6e5f1783-58c7-482e-8811-248998f1ee8c"
+        / "6e5f1783-58c7-482e-8811-248998f1ee8c.jsonl",
         "title": "openvela母目录-竞赛硬件资料与选型",
         "date": "2026-07-19",
     },
     {
         "id": "c06c0b41-3b5e-4e46-a14d-1a09679677b2",
-        "src": Path(
-            r"C:\Users\15568\.cursor\projects"
-            r"\e-openvela-contest2026-313-bianyuanxingzhe\agent-transcripts"
-            r"\c06c0b41-3b5e-4e46-a14d-1a09679677b2"
-            r"\c06c0b41-3b5e-4e46-a14d-1a09679677b2.jsonl"
-        ),
+        "src": TRANSCRIPTS
+        / "c06c0b41-3b5e-4e46-a14d-1a09679677b2"
+        / "c06c0b41-3b5e-4e46-a14d-1a09679677b2.jsonl",
         "title": "专属仓fork与分支确认",
         "date": "2026-08-06",
     },
     {
         "id": "df773b3a-7f00-4cb4-a0df-96892eb25e81",
-        "src": Path(
-            r"C:\Users\15568\.cursor\projects"
-            r"\e-openvela-contest2026-313-bianyuanxingzhe\agent-transcripts"
-            r"\df773b3a-7f00-4cb4-a0df-96892eb25e81"
-            r"\df773b3a-7f00-4cb4-a0df-96892eb25e81.jsonl"
-        ),
-        "title": "边缘行者主开发会话-方案到板端联调",
+        "src": TRANSCRIPTS
+        / "df773b3a-7f00-4cb4-a0df-96892eb25e81"
+        / "df773b3a-7f00-4cb4-a0df-96892eb25e81.jsonl",
+        "title": "边缘行者主开发-方案文档VM SSH LD2451接线",
         "date": "2026-08-06",
+    },
+    {
+        "id": "15467f1e-a3c1-4835-9802-8f43db4984b6",
+        "src": TRANSCRIPTS
+        / "15467f1e-a3c1-4835-9802-8f43db4984b6"
+        / "15467f1e-a3c1-4835-9802-8f43db4984b6.jsonl",
+        "title": "真机联调-屏显蜂鸣WiFi三页UI-Agent Skill PR",
+        "date": "2026-09-01",
+    },
+    {
+        "id": "81d85e8a-bfe3-44be-b301-430c1b5adf8d",
+        "src": TRANSCRIPTS
+        / "81d85e8a-bfe3-44be-b301-430c1b5adf8d"
+        / "81d85e8a-bfe3-44be-b301-430c1b5adf8d.jsonl",
+        "title": "代码推送与远程仓库状态核对",
+        "date": "2026-09-08",
+    },
+    {
+        "id": "527e9d06-d10e-4229-88aa-b522c584ff93",
+        "src": TRANSCRIPTS
+        / "527e9d06-d10e-4229-88aa-b522c584ff93"
+        / "527e9d06-d10e-4229-88aa-b522c584ff93.jsonl",
+        "title": "提交材料缺口与logs合规分析",
+        "date": "2026-09-14",
     },
 ]
 
