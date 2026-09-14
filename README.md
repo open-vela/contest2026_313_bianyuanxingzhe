@@ -150,4 +150,6 @@ ew alert none      → 回 EW READY
 
 提交方式：fork → PR 回专属仓 → 自行合入；首次贡献需签署 [CLA](https://openvela.com/#/community/cla)。
 
-**开源协议：** 本作品遵循 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)（与 openvela 生态一致）。
+**开源协议：** [LICENSE](LICENSE)（Apache 2.0）· 第三方说明见 [NOTICE](NOTICE)。
+
+**版权与合规（2026-09-14）：** 根目录已添加 LICENSE/NOTICE；`app/edge_walker/` 源码已加 SPDX 头；SiFli 原厂 Wiki/PDF 已从 Git 移除，改外链（见 `docs/sifli_pinout_sources/README.md`）。

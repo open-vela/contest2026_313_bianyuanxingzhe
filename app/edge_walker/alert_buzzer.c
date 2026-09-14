@@ -1,3 +1,6 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright 2026 Edge Walker Team (contest2026_313_bianyuanxingzhe) */
+
 /****************************************************************************
  * 蜂鸣器 PA28（40P.23）：无源要 2~5 kHz 方波，有源要直流高电平。
  * 板级曾把 PA28 设成 SPI1_CLK（TF），必须抢回 GPIO 并提高驱动。

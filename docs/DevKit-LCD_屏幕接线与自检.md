@@ -1,7 +1,7 @@
 # DevKit-LCD · 屏幕接线与自检
 
 > 板：SF32LB52-DevKit-LCD V1.2.0 · 固件：`sf32lb52_devkit_lcd`  
-> 来源：`docs/sifli_pinout_sources/SF32LB52-DevKit-LCD_wiki_zh.md`
+> 来源：SiFli 官方 Wiki（外链见 [`sifli_pinout_sources/README.md`](sifli_pinout_sources/README.md)）+ 本队真机验证
 
 ---
 
