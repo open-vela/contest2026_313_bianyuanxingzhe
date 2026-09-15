@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Git pre-push: rebase onto upstream before push (see scripts/git/pre_push_rebase.sh)
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+exec bash "$ROOT/scripts/git/pre_push_rebase.sh"

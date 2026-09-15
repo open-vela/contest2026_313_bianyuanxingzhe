@@ -8,6 +8,10 @@
 | [`submission/`](submission/) | 任意 | 提交 zip 打包、日志归档 |
 | [`archive/`](archive/) | — | 历史一次性脚本（勿用） |
 
+## Git · push 前 rebase
+
+见 [`git/README.md`](git/README.md)。`git push` 前自动 `rebase upstream/dev-ai-contest-2026`（需先 `setup_hooks`）。
+
 ## 常用命令
 
 **Ubuntu 编译主程序：**
