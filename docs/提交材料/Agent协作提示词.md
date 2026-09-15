@@ -99,6 +99,7 @@ gcc host_smoke → ALL PASS；文档可被评委独立复现主机侧测试。
 
 ```
 整理 contest2026_313_bianyuanxingzhe 提交：
+0. **PR 前必跑** `powershell -File scripts/pre_pr_check.ps1`（Guest: `bash scripts/pre_pr_check.sh`）；有冲突先 `git merge upstream/dev-ai-contest-2026` 解决再开/更新 PR。
 1. git add app/edge_walker 未提交改动；commit；push feature/host-edge-walker；PR → dev-ai-contest-2026。
 2. 更新 docs/00_提交材料索引.md 勾选状态。
 3. 按 docs/提交材料/Demo脚本与验收步骤.md 录 ≤5 分钟视频。
