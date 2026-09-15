@@ -67,10 +67,10 @@
 |------|----------|------|
 | 接近检测 | `ew_ld2451.c` 解析 + `ew_decide` 门限 | ✅ 已落地 |
 | 主动执行提醒 | `alert_output()` → 蜂鸣 + LCD | ✅ 已落地（不等人问） |
-| ai_agent ≥1 Skill | 官方 `ai_agent` + Skill 配置 | ⚠️ **待韦政宇合入**（见 `Agent协作提示词.md`） |
+| ai_agent ≥1 Skill | `approach-warn` + `approach_alert`（`ew_agent.c`） | ✅ 已落地；录像用 `ew fake 10 20` 验链路 |
 | 对话 | `ew_chat` + `ew_llm`（MiMo HTTPS） | ✅ 可用（依赖联网） |
 
-当前：**安全环主动告警已真机验证**；Agent 线以 `ew_chat` + 本地 `local_reply` 演示，**正式 Skill 包为提交前 P0**。
+当前：**安全环主动告警 + Skill 链已编进固件**；Demo 必拍 A（预警）+ B（Agent/Skill 日志或快捷句），C（WiFi）可选。
 
 ---
 

@@ -67,6 +67,14 @@ sessions = [
         "title": "提交材料缺口与logs合规分析",
         "date": "2026-09-14",
     },
+    {
+        "id": "f21b17e9-cd2b-475c-80ca-c2edb717282f",
+        "src": TRANSCRIPTS
+        / "f21b17e9-cd2b-475c-80ca-c2edb717282f"
+        / "f21b17e9-cd2b-475c-80ca-c2edb717282f.jsonl",
+        "title": "PR6合入-logs归档-pack_submission-提交材料推进",
+        "date": "2026-09-15",
+    },
 ]
 
 TS_RE = re.compile(r"<timestamp>([^<]+)</timestamp>")
