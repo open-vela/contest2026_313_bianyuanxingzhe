@@ -50,7 +50,7 @@ VMware_share/key.txt
 app/edge_walker/ew_wifi_secret.h
 VMware_share/mailbox/host_to_guest/wifi_join.txt
 
-# Local Cursor / VM share dumps
+# Local Cursor / VM share dumps (skills & hooks stay local — not pushed)
 .cursor/
 VMware_share/artifacts/
 VMware_share/archive/
