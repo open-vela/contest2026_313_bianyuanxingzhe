@@ -3,7 +3,7 @@
   "team_id": "contest2026_313_bianyuanxingzhe",
   "github_login": "zixuanzheng2007-stack",
   "generator": "manual-cursor-archive",
-  "source_note": "Cursor Agent transcripts, schema 1.0 + raw/",
+  "source_note": "官方采集器支持 Claude Code / OpenCode / Codex / AIoT-IDE。本批为 Cursor Agent 开发全过程原始日志归档（含 openvela 母目录会话）。",
   "sessions": [
     {
       "session_id": "6e5f1783-58c7-482e-8811-248998f1ee8c",
@@ -68,7 +68,7 @@
     {
       "session_id": "527e9d06-d10e-4229-88aa-b522c584ff93",
       "tool": "cursor",
-      "title": "提交材料与文档整理",
+      "title": "提交材料缺口与logs合规分析",
       "started_at": "2026-09-14T00:26:00.000Z",
       "last_event_at": "2026-09-14T02:11:00.000Z",
       "event_count": 173,
@@ -76,7 +76,20 @@
       "raw_file_path": "logs/zixuanzheng2007-stack/2026-09-14/raw/527e9d06-d10e-4229-88aa-b522c584ff93.jsonl",
       "collection_mode": "manual-cursor-archive",
       "health": "ok"
+    },
+    {
+      "session_id": "f21b17e9-cd2b-475c-80ca-c2edb717282f",
+      "tool": "cursor",
+      "title": "PR6合入-logs归档-pack_submission-提交材料推进",
+      "started_at": "2026-09-14T07:55:00.000Z",
+      "last_event_at": "2026-09-15T11:27:00.000Z",
+      "event_count": 275,
+      "file_path": "logs/zixuanzheng2007-stack/2026-09-15/cursor__f21b17e9-cd2b-475c-80ca-c2edb717282f.jsonl",
+      "raw_file_path": "logs/zixuanzheng2007-stack/2026-09-15/raw/f21b17e9-cd2b-475c-80ca-c2edb717282f.jsonl",
+      "collection_mode": "manual-cursor-archive",
+      "health": "ok",
+      "note": "Cursor 非官方自动采集；已转竞赛 schema 并保留 raw"
     }
   ],
-  "updated_at": "2026-09-14T02:12:19.712438+00:00"
+  "updated_at": "2026-09-15T11:37:00.000000+00:00"
 }

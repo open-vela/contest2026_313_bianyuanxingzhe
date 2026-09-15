@@ -6,15 +6,13 @@
 
 ```text
 logs/
-└── zixuanzheng2007-stack/
-    ├── manifest.json
-    ├── SOURCE_NOTE.md
-    ├── 2026-07-19/
-    ├── 2026-08-06/
-    ├── 2026-09-01/
-    ├── 2026-09-08/
-    └── 2026-09-14/
+├── zixuanzheng2007-stack/   # 郑子轩（Host）· 7 会话
+└── wjh669939-cmd/           # 王筠昊（Guest VM Cursor Agent）· 6 会话
 ```
+
+`wjh669939-cmd/` 含 `manifest.json`、`SOURCE_NOTE.md`，以及 2026-08-11 / 08-15 / 08-29 / 09-11 / 09-13。官方 `contest-snapshot --source cursor` 在 Guest 为 0 条，已按 Agent transcript 转 schema 1.0 并保留 `raw/`。
+
+Host 会话一览（`zixuanzheng2007-stack/`）：
 
 | session_id | 内容 |
 |------------|------|
@@ -24,6 +22,7 @@ logs/
 | `15467f1e-a3c1-4835-9802-8f43db4984b6` | 真机联调、屏显蜂鸣、WiFi UI、Agent Skill |
 | `81d85e8a-bfe3-44be-b301-430c1b5adf8d` | 代码推送与远程仓库 |
 | `527e9d06-d10e-4229-88aa-b522c584ff93` | 提交材料与文档整理 |
+| `f21b17e9-cd2b-475c-80ca-c2edb717282f` | PR#6 合入、pack 脚本、提交材料推进（2026-09-15） |
 
 重导：`python scripts/archive_cursor_logs.py`
 

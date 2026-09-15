@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0",
+  "team_id": "contest2026_313_bianyuanxingzhe",
+  "github_login": "wjh669939-cmd",
+  "generator": "manual-cursor-archive",
+  "source_note": "Guest VM Cursor Agent transcripts for 王筠昊. Skipped: empty 1-line sessions, gnome-rdp TLS chat, empty-window duplicate. Skipped list: ['5030daf8-4689-44d3-8a6a-130bca157712 empty 1-line', '2a392252-14f8-4288-82a2-89ad10dd1d5c gnome-rdp TLS unrelated', 'empty-window 01d2fca0 duplicate of contest workspace copy']",
+  "sessions": [
+    {
+      "session_id": "d64b7761-5cd7-4bc0-b2d7-3d2b9a85203f",
+      "tool": "cursor",
+      "title": "Guest VM 环境与 openvela 源码树",
+      "started_at": "2026-08-15T06:50:00.000Z",
+      "last_event_at": "2026-09-15T11:42:20.474Z",
+      "event_count": 371,
+      "file_path": "logs/wjh669939-cmd/2026-08-15/cursor__d64b7761-5cd7-4bc0-b2d7-3d2b9a85203f.jsonl",
+      "raw_file_path": "logs/wjh669939-cmd/2026-08-15/raw/d64b7761-5cd7-4bc0-b2d7-3d2b9a85203f.jsonl",
+      "collection_mode": "manual-cursor-archive",
+      "health": "ok",
+      "note": "Cursor Agent transcript; official contest-snapshot backfill imported 0"
+    },
+    {
+      "session_id": "01d2fca0-6293-4235-9dc5-d5c2d26fdee3",
+      "tool": "cursor",
+      "title": "Guest 开发环境、共享盘与串口联调",
+      "started_at": "2026-08-11T12:04:00.000Z",
+      "last_event_at": "2026-09-15T11:42:20.486Z",
+      "event_count": 3832,
+      "file_path": "logs/wjh669939-cmd/2026-08-11/cursor__01d2fca0-6293-4235-9dc5-d5c2d26fdee3.jsonl",
+      "raw_file_path": "logs/wjh669939-cmd/2026-08-11/raw/01d2fca0-6293-4235-9dc5-d5c2d26fdee3.jsonl",
+      "collection_mode": "manual-cursor-archive",
+      "health": "ok",
+      "note": "Cursor Agent transcript; official contest-snapshot backfill imported 0"
+    },
+    {
+      "session_id": "a75a36a0-135d-4326-a911-428224fa1a69",
+      "tool": "cursor",
+      "title": "烧录与 NSH 验收",
+      "started_at": "2026-08-29T03:40:00.000Z",
+      "last_event_at": "2026-09-15T11:42:20.538Z",
+      "event_count": 23,
+      "file_path": "logs/wjh669939-cmd/2026-08-29/cursor__a75a36a0-135d-4326-a911-428224fa1a69.jsonl",
+      "raw_file_path": "logs/wjh669939-cmd/2026-08-29/raw/a75a36a0-135d-4326-a911-428224fa1a69.jsonl",
+      "collection_mode": "manual-cursor-archive",
+      "health": "ok",
+      "note": "Cursor Agent transcript; official contest-snapshot backfill imported 0"
+    },
+    {
+      "session_id": "93a9ed75-b81f-417a-b335-6b7f49cd136e",
+      "tool": "cursor",
+      "title": "ai_agent Skill approach-warn 上板",
+      "started_at": "2026-09-11T09:06:00.000Z",
+      "last_event_at": "2026-09-15T11:42:20.539Z",
+      "event_count": 306,
+      "file_path": "logs/wjh669939-cmd/2026-09-11/cursor__93a9ed75-b81f-417a-b335-6b7f49cd136e.jsonl",
+      "raw_file_path": "logs/wjh669939-cmd/2026-09-11/raw/93a9ed75-b81f-417a-b335-6b7f49cd136e.jsonl",
+      "collection_mode": "manual-cursor-archive",
+      "health": "ok",
+      "note": "Cursor Agent transcript; official contest-snapshot backfill imported 0"
+    },
+    {
+      "session_id": "4396e9e7-7f1b-400b-ab9c-20100da1ae9c",
+      "tool": "cursor",
+      "title": "host_smoke / ew_ld2451 命令回归",
+      "started_at": "2026-09-11T09:19:00.000Z",
+      "last_event_at": "2026-09-15T11:42:20.544Z",
+      "event_count": 70,
+      "file_path": "logs/wjh669939-cmd/2026-09-11/cursor__4396e9e7-7f1b-400b-ab9c-20100da1ae9c.jsonl",
+      "raw_file_path": "logs/wjh669939-cmd/2026-09-11/raw/4396e9e7-7f1b-400b-ab9c-20100da1ae9c.jsonl",
+      "collection_mode": "manual-cursor-archive",
+      "health": "ok",
+      "note": "Cursor Agent transcript; official contest-snapshot backfill imported 0"
+    },
+    {
+      "session_id": "03104b55-2765-4cfd-a7ae-7ce795a04b45",
+      "tool": "cursor",
+      "title": "阅读 openvela、LD2451 数据侧 P0、logs 归档",
+      "started_at": "2026-09-13T10:25:00.000Z",
+      "last_event_at": "2026-09-15T11:39:00.000Z",
+      "event_count": 143,
+      "file_path": "logs/wjh669939-cmd/2026-09-13/cursor__03104b55-2765-4cfd-a7ae-7ce795a04b45.jsonl",
+      "raw_file_path": "logs/wjh669939-cmd/2026-09-13/raw/03104b55-2765-4cfd-a7ae-7ce795a04b45.jsonl",
+      "collection_mode": "manual-cursor-archive",
+      "health": "ok",
+      "note": "Cursor Agent transcript; official contest-snapshot backfill imported 0"
+    }
+  ],
+  "updated_at": "2026-09-15T11:42:20.547661+00:00"
+}

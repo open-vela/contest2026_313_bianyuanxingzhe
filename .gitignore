@@ -1,3 +1,6 @@
+# Submission zip output
+dist/
+
 # Build artifacts
 build/
 out/
