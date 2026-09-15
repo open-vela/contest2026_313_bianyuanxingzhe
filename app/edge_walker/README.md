@@ -102,4 +102,4 @@ ninja -C ~/openvela/cmake_out/sf32lb52_devkit_lcd
 
 产物 `cmake_out/sf32lb52_devkit_lcd/nuttx.bin`，烧录地址 `0x12010000`。
 
-屏接线说明见 `docs/DevKit-LCD_屏幕接线与自检.md`。
+屏接线说明见 [`docs/硬件/DevKit-LCD.md`](../../docs/硬件/DevKit-LCD.md)。

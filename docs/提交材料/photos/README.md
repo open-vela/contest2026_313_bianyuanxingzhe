@@ -9,5 +9,5 @@
 | `03_预警橙.jpg` | 屏显 WARN 橙 + 蜂鸣响 |
 | `04_预警红.jpg` | 屏显 CRIT 红（或 EW READY 蓝底对照） |
 
-拍完后自检：`python scripts/pack_submission.py --check-only`  
-齐 PDF + mp4 + photos 后：`python scripts/pack_submission.py`
+拍完后自检：`python scripts/submission/pack_submission.py --check-only`  
+齐 PDF + mp4 + photos 后：`python scripts/submission/pack_submission.py`
