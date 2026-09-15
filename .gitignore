@@ -21,13 +21,17 @@ tools/putty.zip
 tools/ld2451/*.apk
 tools/ld2451/*.zip
 tools/ld2451/**/*.exe
+tools/ld2451/**/*.pdf
+tools/ld2451/**/*.html
+tools/sftool/*.zip
+tools/sftool/sftool-*/
 tools/sifli_docs/DevKit-LCD/
 tools/sifli_docs/*.zip
 tools/sifli_docs/SF32LB52-DevKit-LCD_wiki_*.md
-docs/sifli_pinout_sources/*.pdf
-docs/sifli_pinout_sources/*.asc
-docs/sifli_pinout_sources/*.png
-docs/sifli_pinout_sources/SF32LB52-DevKit-LCD_wiki_*.md
+docs/硬件/sifli_pinout_sources/*.pdf
+docs/硬件/sifli_pinout_sources/*.asc
+docs/硬件/sifli_pinout_sources/*.png
+docs/硬件/sifli_pinout_sources/SF32LB52-DevKit-LCD_wiki_*.md
 tools/drivers/**
 tools/vmware/**
 
@@ -49,7 +53,15 @@ VMware_share/mailbox/host_to_guest/wifi_join.txt
 # Local Cursor / VM share dumps
 .cursor/
 VMware_share/artifacts/
-VMware_share/mailbox/status/host_watch_fp.txt
+VMware_share/archive/
+VMware_share/mailbox/
+VMware_share/mailbox/status/
+VMware_share/*.ps1
+VMware_share/*.py
+VMware_share/*.txt
+VMware_share/*.sh
+!VMware_share/README.md
+*.lnk
 
 # NOTE: Do NOT ignore logs/ final AI Coding exports.
 

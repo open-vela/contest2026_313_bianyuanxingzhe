@@ -12,7 +12,7 @@
 LD2451 ──UART──► 板端解析 + 本地门限决策 ──► alert_output（可感知响应）
 ```
 
-初赛 MVP 双线：① LD2451→板端门限→`alert_output`；② openvela **ai_agent** 上板 + ≥1 Skill + ≥1「主动+执行」（接近触发告警 Tool）。测距不靠 LLM。分工见 `docs/分工/`。
+初赛 MVP 双线：① LD2451→板端门限→`alert_output`；② openvela **ai_agent** 上板 + ≥1 Skill + ≥1「主动+执行」（接近触发告警 Tool）。测距不靠 LLM。分工见 [`docs/分工/README.md`](docs/分工/README.md)。
 
 ## 二、选题方向
 
@@ -31,14 +31,14 @@ contest2026_313_bianyuanxingzhe/
 ├── board_overlay/sf32lb52_devkit_lcd/  # rcS.user → ew boot
 ├── board/contest_board/      # 模板板级骨架
 ├── quickapp/hello_quickapp/  # 快应用模板（本作品暂不依赖）
-├── docs/                     # 方案、选型、接线、分工、冒烟记录
-├── scripts/                  # Windows 检测/冒烟/烧录辅助脚本
-├── tools/                    # 本机工具缓存（驱动/雷达APP/sftool；大文件默认不入仓）
+├── docs/                     # 文档（见 docs/README.md）
+├── scripts/                  # guest=Ubuntu 编译 · host=Windows 烧录/冒烟
+├── VMware_share/artifacts/   # HGFS 固件交换（gitignore）
+├── tools/                    # sftool、雷达手册等
 └── logs/                     # AI Coding 日志（必须提交）
-    └── zixuanzheng2007-stack/
 ```
 
-详细文档索引见 [`docs/00_提交材料索引.md`](docs/00_提交材料索引.md)。
+详细文档索引见 [`docs/README.md`](docs/README.md)（提交勾选见 [`docs/00_提交材料索引.md`](docs/00_提交材料索引.md)）。
 
 ## 四、运行方式
 
@@ -64,12 +64,11 @@ repo sync -c -j8
 #   Contest 2026 team 313 edge_walker
 #   LVGL / FreeType（若需 Agent 中文）
 
-./build.sh vendor/sifli/boards/sf32lb52_devkit_lcd --cmake -j8
-# 路径以 vendor 实际目录为准；亦可用已配置的 cmake_out 增量：
-# ninja -C cmake_out/sf32lb52_devkit_lcd
+bash contest2026_313_bianyuanxingzhe/scripts/guest/build_ew_main.sh
+# 或全量：./build.sh vendor/sifli/boards/sf32lb52_devkit_lcd --cmake -j8
 ```
 
-产物：`cmake_out/sf32lb52_devkit_lcd/nuttx.bin`，烧录地址 **`0x12010000`**。
+产物：`cmake_out/.../nuttx.bin` → 拷贝到 `VMware_share/artifacts/nuttx.bin`，烧录地址 **`0x12010000`**。
 
 ### 3. 烧录（Windows 真机站）
 
@@ -77,8 +76,8 @@ repo sync -c -j8
 - 工具：`tools/sftool/sftool.exe` 或思澈 Impeller（Interface=UART）
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\flash_sf32.ps1 `
-  -Port COM7 -Firmware "nuttx.bin@0x12010000"
+powershell -ExecutionPolicy Bypass -File scripts\host\flash_sf32.ps1 `
+  -Port COM7 -Firmware "VMware_share\artifacts\nuttx.bin@0x12010000"
 ```
 
 等价：
@@ -92,7 +91,7 @@ sftool -c SF32LB52 -p COM7 -b 1000000 write_flash nuttx.bin@0x12010000
 - VIN→5V，GND→GND，TX↔RX 交叉接板端业务 UART（勿占用 Debug UART）
 - 手机 **HLKRadarTool** 可先蓝牙验活；量产路径以 UART 协议解析为准
 
-更细的接线见 [`docs/三款毫米波雷达综合选型与接线手册.md`](docs/三款毫米波雷达综合选型与接线手册.md)。
+接线见 [`docs/硬件/DevKit-LCD.md`](docs/硬件/DevKit-LCD.md) · 雷达选型见 [`docs/硬件/三款毫米波雷达综合选型与接线手册.md`](docs/硬件/三款毫米波雷达综合选型与接线手册.md)。
 
 ### 5. 板上演示（评委 / 录像）
 
@@ -152,4 +151,4 @@ ew alert none      → 回 EW READY
 
 **开源协议：** [LICENSE](LICENSE)（Apache 2.0）· 第三方说明见 [NOTICE](NOTICE)。
 
-**版权与合规（2026-09-14）：** 根目录已添加 LICENSE/NOTICE；`app/edge_walker/` 源码已加 SPDX 头；SiFli 原厂 Wiki/PDF 已从 Git 移除，改外链（见 `docs/sifli_pinout_sources/README.md`）。
+**版权与合规（2026-09-14）：** 根目录已添加 LICENSE/NOTICE；`app/edge_walker/` 源码已加 SPDX 头；SiFli 原厂 Wiki/PDF 已从 Git 移除，改外链（见 [`docs/硬件/sifli_pinout_sources/README.md`](docs/硬件/sifli_pinout_sources/README.md)）。

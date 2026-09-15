@@ -84,7 +84,20 @@
 
 ---
 
-## 8. 三人分工（代码归属）
+## 8. 烧录后屏上勾选
+
+固件：`VMware_share/artifacts/nuttx.bin`（或 `nuttx_wifiui.bin`）@ `0x12010000` · COM7 @ 1Mbps
+
+- [ ] 开机进预警页，雷达接好时不长期卡 NO RADAR
+- [ ] `ew fake 10 20` → 橙/红 + 蜂鸣；串口见 `[ew_agent]` + `[alert_output]`
+- [ ] WiFi 页 scan / 手动 SSID → 状态 `WIFI ON x.x.x.x` 或失败原因
+- [ ] Agent 页快捷句「Who are you?」/「告警怎么工作」（需联网时先连 WiFi）
+
+VMware USB 透传：可移动设备 → 连接 CH343 → Guest 可烧录 `/dev/ttyACM0`。
+
+---
+
+## 9. 三人分工（代码归属）
 
 | 成员 | 模块 | 代码占比（行） |
 |------|------|----------------|
