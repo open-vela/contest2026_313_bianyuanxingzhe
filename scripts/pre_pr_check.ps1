@@ -12,8 +12,10 @@ Write-Host "== pre_pr_check ==" -ForegroundColor Cyan
 Write-Host "repo:  $Root"
 Write-Host "branch: $Branch -> upstream/${Base}"
 
-& git -C $Root fetch upstream $Base
-& git -C $Root fetch origin $Branch 2>$null
+$ErrorActionPreference = "Continue"
+& git -C $Root fetch upstream $Base 2>&1 | Out-Null
+& git -C $Root fetch origin $Branch 2>&1 | Out-Null
+$ErrorActionPreference = "Stop"
 
 $dirty = git -C $Root status --porcelain | Where-Object { $_ -notmatch '^\?\?' }
 if ($dirty) {
