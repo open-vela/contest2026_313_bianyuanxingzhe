@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "team_id": "contest2026_313_bianyuanxingzhe",
   "github_login": "zixuanzheng2007-stack",
-  "generator": "manual-cursor-archive",
+  "generator": "cursor-and-codex-archive",
   "source_note": "官方采集器支持 Claude Code / OpenCode / Codex / AIoT-IDE。本批为 Cursor Agent 开发全过程原始日志归档（含 openvela 母目录会话）。",
   "sessions": [
     {
@@ -89,7 +89,20 @@
       "collection_mode": "manual-cursor-archive",
       "health": "ok",
       "note": "Cursor 非官方自动采集；已转竞赛 schema 并保留 raw"
+    },
+    {
+      "session_id": "01a0b20d-669b-7502-9e56-9fc0dc3502d7",
+      "tool": "codex",
+      "title": "WiFi-MiMo-PC控制面板-显示交互与真机验收",
+      "started_at": "2026-09-18T01:07:28.714Z",
+      "last_event_at": "2026-09-18T16:25:57.468Z",
+      "event_count": 2484,
+      "raw_event_count": 8030,
+      "file_path": "logs/zixuanzheng2007-stack/2026-09-18/codex__01a0b20d-669b-7502-9e56-9fc0dc3502d7.jsonl",
+      "collection_mode": "vscode_extension",
+      "health": "ok",
+      "model": "gpt-5.6-sol"
     }
   ],
-  "updated_at": "2026-09-15T11:37:00.000000+00:00"
+  "updated_at": "2026-09-18T16:25:59.284528+00:00"
 }
