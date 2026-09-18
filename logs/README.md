@@ -6,7 +6,7 @@
 
 ```text
 logs/
-├── zixuanzheng2007-stack/   # 郑子轩（Host）· 7 会话
+├── zixuanzheng2007-stack/   # 郑子轩（Host）· 8 会话（7 Cursor + 1 Codex）
 └── wjh669939-cmd/           # 王筠昊（Guest VM Cursor Agent）· 6 会话
 ```
 
@@ -23,8 +23,12 @@ Host 会话一览（`zixuanzheng2007-stack/`）：
 | `81d85e8a-bfe3-44be-b301-430c1b5adf8d` | 代码推送与远程仓库 |
 | `527e9d06-d10e-4229-88aa-b522c584ff93` | 提交材料与文档整理 |
 | `f21b17e9-cd2b-475c-80ca-c2edb717282f` | PR#6 合入、pack 脚本、提交材料推进（2026-09-15） |
+| `01a0b20d-669b-7502-9e56-9fc0dc3502d7` | WiFi/MiMo、PC 控制面板、显示交互与真机验收（Codex Desktop，2026-09-18） |
 
-重导：`python scripts/archive_cursor_logs.py`
+Cursor 重导：`python scripts/submission/archive_cursor_logs.py`
+
+Codex Desktop 增量归档：`python scripts/submission/archive_codex_logs.py <session-id> --title <title>`。
+官方 collector 1.3.0 的 Codex CLI 解析器暂不能识别 Desktop 的分页 rollout，兼容脚本沿用 schema 1.0、脱敏规则和不可覆盖策略。
 
 ## 字段说明
 
