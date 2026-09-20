@@ -30,6 +30,16 @@ powershell -ExecutionPolicy Bypass -File scripts\host\flash_sf32.ps1 `
   -Port COM7 -Firmware "VMware_share\artifacts\nuttx.bin@0x12010000"
 ```
 
+**Windows 串口调试（NSH / `@` 遥控）：**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\host\nsh_auto.ps1 -Port COM7 `
+  -Commands "ls /dev","ew wifi ping"
+python scripts/host/wifi_at_probe_once.py
+```
+
+Agent 规则：`.cursor/rules/serial-debug-devkit.mdc` · 详表：`.agents/skills/devkit-serial-debug/SKILL.md`
+
 **提交打包：**
 
 ```bash

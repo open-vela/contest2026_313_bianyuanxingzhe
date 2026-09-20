@@ -6,6 +6,8 @@ LOG=/mnt/hgfs/VMware_share/artifacts/build_ew_main.log
 DEF=vendor/sifli/boards/sf32lb52/sf32lb52_devkit_lcd/configs/nsh/defconfig
 DEMO=packages/demos/contest2026_313_edge_walker
 SRC=contest2026_313_bianyuanxingzhe/app/edge_walker
+DMA_PATCH=contest2026_313_bianyuanxingzhe/board_overlay/sf32lb52_devkit_lcd/patches/wifi_uart_dma.patch
+DMA_CONFIG=contest2026_313_bianyuanxingzhe/board_overlay/sf32lb52_devkit_lcd/wifi_dma.config
 
 echo "==== TASK_007 edge_walker $(date -Iseconds) ====" | tee "$LOG"
 
@@ -13,6 +15,26 @@ echo "==== TASK_007 edge_walker $(date -Iseconds) ====" | tee "$LOG"
 PATCH_SH=contest2026_313_bianyuanxingzhe/scripts/patches/devkit_lcd_touch_i2c.sh
 if [ -f "$PATCH_SH" ]; then
   bash "$PATCH_SH" "$PWD" | tee -a "$LOG"
+fi
+
+# 0b) Preserve the independently validated UART3 RX DMA fix on clean builds.
+if [ -f "$DMA_PATCH" ]; then
+  if git -C vendor/sifli apply --reverse --check "../../$DMA_PATCH" >/dev/null 2>&1; then
+    echo "wifi UART DMA patch already applied" | tee -a "$LOG"
+  else
+    git -C vendor/sifli apply --check "../../$DMA_PATCH" >>"$LOG" 2>&1 || exit $?
+    git -C vendor/sifli apply "../../$DMA_PATCH" >>"$LOG" 2>&1 || exit $?
+    echo "wifi UART DMA patch applied" | tee -a "$LOG"
+  fi
+fi
+if [ -f "$DMA_CONFIG" ]; then
+  while IFS= read -r setting; do
+    case "$setting" in
+      CONFIG_*=y)
+        grep -q "^${setting}$" "$DEF" || echo "$setting" >>"$DEF"
+        ;;
+    esac
+  done <"$DMA_CONFIG"
 fi
 
 # 1) sync app + demos symlink
