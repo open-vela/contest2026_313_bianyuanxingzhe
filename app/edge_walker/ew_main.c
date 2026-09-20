@@ -87,6 +87,74 @@ static int cmd_fake(int argc, char **argv)
   return 0;
 }
 
+/* NSH 可能把带空格 SSID 拆成多个 argv，合并 [from..to] 后再 parse_cli_token */
+static void join_argv_tokens(int argc, char **argv, int from, int to,
+                             char *out, unsigned out_sz)
+{
+  int i;
+  unsigned n = 0;
+
+  if (out_sz == 0) {
+    return;
+  }
+  out[0] = '\0';
+  if (from > to || from >= argc) {
+    return;
+  }
+  if (to >= argc) {
+    to = argc - 1;
+  }
+  for (i = from; i <= to; i++) {
+    const char *s = argv[i];
+    size_t len;
+
+    if (s == NULL) {
+      continue;
+    }
+    len = strlen(s);
+    if (i > from && n + 1 < out_sz) {
+      out[n++] = ' ';
+    }
+    if (n + len + 1 > out_sz) {
+      len = out_sz - n - 1;
+    }
+    memcpy(out + n, s, len);
+    n += len;
+    out[n] = '\0';
+  }
+}
+
+static void parse_cli_token(const char *arg, char *out, unsigned out_sz)
+{
+  const char *p = arg;
+  unsigned n = 0;
+
+  if (out_sz == 0) {
+    return;
+  }
+  out[0] = '\0';
+  if (arg == NULL) {
+    return;
+  }
+  while (*p != '\0' && (*p == ' ' || *p == '\t')) {
+    p++;
+  }
+  if (*p == '"') {
+    p++;
+    while (*p != '\0' && *p != '"' && n + 1 < out_sz) {
+      out[n++] = *p++;
+    }
+    if (*p == '"') {
+      p++;
+    }
+  } else {
+    while (*p != '\0' && *p != ' ' && *p != '\t' && n + 1 < out_sz) {
+      out[n++] = *p++;
+    }
+  }
+  out[n] = '\0';
+}
+
 static int cmd_wifi(int argc, char **argv)
 {
   static const char *state_name[] = {
@@ -113,16 +181,47 @@ static int cmd_wifi(int argc, char **argv)
   }
 
   if (strcmp(sub, "join") == 0) {
+    char ssid[EW_WIFI_SSID_MAX];
+    char pass[EW_WIFI_PASS_MAX];
+    char raw[EW_WIFI_SSID_MAX * 2];
     int rc;
 
     if (argc < 4) {
       printf("usage: ew wifi join <ssid> [password]\n");
+      printf("  ssid with spaces: ew wifi join \"Pura 80 Pro+\" pass\n");
       return 1;
     }
-    rc = ew_wifi_join(argv[3], (argc >= 5) ? argv[4] : "", status,
-                      sizeof(status));
+    if (argc >= 5) {
+      join_argv_tokens(argc, argv, 3, argc - 2, raw, sizeof(raw));
+      parse_cli_token(raw, ssid, sizeof(ssid));
+      parse_cli_token(argv[argc - 1], pass, sizeof(pass));
+    } else {
+      parse_cli_token(argv[3], ssid, sizeof(ssid));
+      pass[0] = '\0';
+    }
+    rc = ew_wifi_join(ssid, pass, status, sizeof(status));
     printf("[ew-wifi] %s\n", status);
     return rc;
+  }
+
+  if (strcmp(sub, "probe") == 0) {
+    ew_wifi_ap_t ap;
+    char raw[EW_WIFI_SSID_MAX * 2];
+
+    if (argc < 4) {
+      printf("usage: ew wifi probe <ssid>\n");
+      printf("  ew wifi probe \"Pura 80 Pro+\"\n");
+      return 1;
+    }
+    join_argv_tokens(argc, argv, 3, argc - 1, raw, sizeof(raw));
+    parse_cli_token(raw, status, sizeof(status));
+    if (ew_wifi_probe_ssid(status, &ap) != 0) {
+      printf("[ew-wifi] probe miss: %s\n", status);
+      return 1;
+    }
+    printf("[ew-wifi] probe hit: %s  %d dBm  %s\n", ap.ssid, ap.rssi,
+           ap.open ? "open" : "locked");
+    return 0;
   }
 
   if (strcmp(sub, "forget") == 0) {
@@ -130,7 +229,7 @@ static int cmd_wifi(int argc, char **argv)
   }
 
   if (strcmp(sub, "ping") == 0) {
-    return ew_wifi_at_ping();
+    return ew_wifi_at_diag();
   }
 
   if (strcmp(sub, "raw") == 0) {
@@ -235,8 +334,10 @@ static int cmd_help(void)
   printf("  ew wifi                     link state + saved ssid\n");
   printf("  ew wifi scan                list nearby networks\n");
   printf("  ew wifi join <ssid> [pass]  connect and remember\n");
+  printf("  ew wifi probe <ssid>        directed scan one SSID\n");
   printf("  ew wifi forget              drop saved credentials\n");
-  printf("  ew wifi ping|raw            AT handshake / CWJAP?+CIFSR\n");
+  printf("  ew wifi ping                MODEM/WiFi/LAN/ONLINE layered check\n");
+  printf("  ew wifi raw                 AT+GMR/CWMODE?/CWJAP?/CIPSTA?\n");
   printf("  ew at <cmd>                 raw AT, e.g. ew at AT+CIFSR\n");
   printf("  ew ask <text>               one-shot LLM question\n");
   return 0;

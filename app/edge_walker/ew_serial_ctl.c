@@ -29,8 +29,8 @@
 #endif
 #endif
 
-#define EW_CTL_LINE_MAX 240
-#define EW_CTL_Q_MAX    8
+#define EW_CTL_LINE_MAX 768
+#define EW_CTL_Q_MAX    16
 
 typedef struct {
   char lines[EW_CTL_Q_MAX][EW_CTL_LINE_MAX];
@@ -49,7 +49,16 @@ static void q_push(const char *line)
     snprintf(g_q.lines[g_q.tail], EW_CTL_LINE_MAX, "%s", line);
     g_q.tail = (g_q.tail + 1) % EW_CTL_Q_MAX;
   } else {
-    printf("[ew-ctl] queue full, drop: %s\n", line);
+    if (strncmp(line, "mimo-set", 8) == 0) {
+      printf("[ew-ctl] queue full, drop: mimo-set ***\n");
+    } else if (strncmp(line, "join", 4) == 0) {
+      printf("[ew-ctl] queue full, drop: join ***\n");
+    } else if (strncmp(line, "input", 5) == 0 ||
+               strncmp(line, "submit", 6) == 0) {
+      printf("[ew-ctl] queue full, drop: remote text ***\n");
+    } else {
+      printf("[ew-ctl] queue full, drop: %s\n", line);
+    }
   }
   pthread_mutex_unlock(&g_q.mu);
 }
@@ -100,13 +109,19 @@ static void parse_token(const char **p, char *tok, unsigned tok_sz)
 
 #if defined(__NuttX__) && defined(CONFIG_LV_USE_NUTTX)
 
+static lv_obj_t *g_touch_obj;
+static lv_obj_t *g_touch_scroll;
+static lv_point_t g_touch_start;
+static lv_point_t g_touch_last;
+static int g_touch_moved;
+
 static lv_obj_t *ctl_hit_obj(lv_obj_t *root, lv_point_t *pt)
 {
   lv_obj_t *child;
   uint32_t i;
   uint32_t n;
 
-  if (root == NULL) {
+  if (root == NULL || lv_obj_has_flag(root, LV_OBJ_FLAG_HIDDEN)) {
     return NULL;
   }
   n = lv_obj_get_child_count(root);
@@ -123,22 +138,95 @@ static lv_obj_t *ctl_hit_obj(lv_obj_t *root, lv_point_t *pt)
   return NULL;
 }
 
-static void ctl_tap(int16_t x, int16_t y)
+static lv_obj_t *ctl_scroll_parent(lv_obj_t *obj)
+{
+  while (obj != NULL) {
+    if (lv_obj_has_flag(obj, LV_OBJ_FLAG_SCROLLABLE)) {
+      return obj;
+    }
+    obj = lv_obj_get_parent(obj);
+  }
+  return NULL;
+}
+
+static lv_obj_t *ctl_click_target(lv_obj_t *obj)
+{
+  lv_obj_t *hit = obj;
+  lv_obj_t *clickable = NULL;
+
+  while (obj != NULL) {
+    if (lv_obj_check_type(obj, &lv_button_class)) {
+      return obj;
+    }
+    if (clickable == NULL && lv_obj_has_flag(obj, LV_OBJ_FLAG_CLICKABLE)) {
+      clickable = obj;
+    }
+    obj = lv_obj_get_parent(obj);
+  }
+  return clickable != NULL ? clickable : hit;
+}
+
+static void ctl_touch_down(int16_t x, int16_t y)
 {
   lv_point_t pt;
-  lv_obj_t *obj;
 
   pt.x = x;
   pt.y = y;
-  obj = ctl_hit_obj(lv_screen_active(), &pt);
-  if (obj == NULL) {
-    printf("[ew-ctl] tap %d,%d: no widget\n", (int)x, (int)y);
+  g_touch_obj = ctl_click_target(ctl_hit_obj(lv_screen_active(), &pt));
+  if (g_touch_obj == NULL) {
+    printf("[ew-ctl] touch down %d,%d: no widget\n", (int)x, (int)y);
     return;
   }
-  lv_obj_send_event(obj, LV_EVENT_PRESSED, NULL);
-  lv_obj_send_event(obj, LV_EVENT_CLICKED, NULL);
-  lv_obj_send_event(obj, LV_EVENT_RELEASED, NULL);
-  printf("[ew-ctl] tap %d,%d -> obj %p\n", (int)x, (int)y, (void *)obj);
+  g_touch_scroll = ctl_scroll_parent(g_touch_obj);
+  g_touch_start = pt;
+  g_touch_last = pt;
+  g_touch_moved = 0;
+  lv_obj_send_event(g_touch_obj, LV_EVENT_PRESSED, NULL);
+}
+
+static void ctl_touch_move(int16_t x, int16_t y)
+{
+  int dx;
+  int dy;
+
+  if (g_touch_obj == NULL) {
+    return;
+  }
+  dx = (int)x - (int)g_touch_last.x;
+  dy = (int)y - (int)g_touch_last.y;
+  if (abs((int)x - (int)g_touch_start.x) > 5 ||
+      abs((int)y - (int)g_touch_start.y) > 5) {
+    g_touch_moved = 1;
+  }
+  if (g_touch_scroll != NULL && (dx != 0 || dy != 0)) {
+    lv_obj_scroll_by(g_touch_scroll, -dx, -dy, LV_ANIM_OFF);
+  }
+  g_touch_last.x = x;
+  g_touch_last.y = y;
+  lv_obj_send_event(g_touch_obj, LV_EVENT_PRESSING, NULL);
+}
+
+static void ctl_touch_up(int16_t x, int16_t y)
+{
+  if (g_touch_obj == NULL) {
+    return;
+  }
+  if (!g_touch_moved) {
+    lv_obj_send_event(g_touch_obj, LV_EVENT_CLICKED, NULL);
+  }
+  lv_obj_send_event(g_touch_obj, LV_EVENT_RELEASED, NULL);
+  printf("[ew-ctl] touch %d,%d -> %d,%d moved=%d obj=%p\n",
+         (int)g_touch_start.x, (int)g_touch_start.y, (int)x, (int)y,
+         g_touch_moved, (void *)g_touch_obj);
+  g_touch_obj = NULL;
+  g_touch_scroll = NULL;
+  g_touch_moved = 0;
+}
+
+static void ctl_tap(int16_t x, int16_t y)
+{
+  ctl_touch_down(x, y);
+  ctl_touch_up(x, y);
 }
 
 static void ctl_goto_page(const char *name)
@@ -205,7 +293,8 @@ static void *ctl_worker(void *arg)
     int i;
 
     if (n < 0) {
-      printf("[ew-ctl] scan failed\n");
+      printf("[ew-ctl] scan %s\n",
+             n == EW_WIFI_SCAN_BUSY ? "already running" : "failed");
     } else {
       for (i = 0; i < n; i++) {
         printf("  %-32s %4d dBm  %s\n", aps[i].ssid, aps[i].rssi,
@@ -227,6 +316,10 @@ static void *ctl_worker(void *arg)
     } else {
       printf("[ew-ctl] join ok: %s\n", status);
     }
+  } else if (strcmp(verb, "forget") == 0) {
+    int rc = ew_wifi_forget();
+
+    printf("[ew-ctl] forget %s rc=%d\n", rc == 0 ? "ok" : "fail", rc);
   } else if (strcmp(verb, "ask") == 0) {
     char reply[512];
     char question[EW_CTL_LINE_MAX];
@@ -276,19 +369,88 @@ static void ctl_dispatch(const char *line)
   char verb[32];
   char a[32];
   char b[32];
+  char c[32];
 
   parse_token(&p, verb, sizeof(verb));
   if (verb[0] == '\0') {
     return;
   }
 
-  printf("[ew-ctl] cmd: %s\n", line);
+  if (strcmp(verb, "join") == 0) {
+    printf("[ew-ctl] cmd: join ***\n");
+  } else if (strcmp(verb, "mimo-set") == 0) {
+    printf("[ew-ctl] cmd: mimo-set ***\n");
+  } else if (strcmp(verb, "input") == 0 || strcmp(verb, "submit") == 0) {
+    printf("[ew-ctl] cmd: %s (%u bytes)\n", verb, (unsigned)strlen(p));
+  } else {
+    printf("[ew-ctl] cmd: %s\n", line);
+  }
 
   if (strcmp(verb, "help") == 0) {
     printf("[ew-ctl] @goto warn|wifi|chat  @alert soft|strong|none\n");
-    printf("[ew-ctl] @fake 10 20  @scan  @join SSID pass  @ask text\n");
-    printf("[ew-ctl] @ping  @status  @tap x y\n");
-    printf("[ew-ctl] @mirror on|off|snap  (PC 实时镜像)\n");
+    printf("[ew-ctl] @fake 10 20  @scan  @join SSID pass  @forget  @ask text\n");
+    printf("[ew-ctl] @ping  @status  @tap x y  @touch down|move|up x y\n");
+    printf("[ew-ctl] @mirror fast|on|normal|hd|off|snap\n");
+    printf("[ew-ctl] @mimo-set <key>  @mimo-rollback\n");
+    printf("[ew-ctl] @input/@submit <UTF-8 text>  @key backspace|tab|escape\n");
+    return;
+  }
+
+  if (strcmp(verb, "input") == 0) {
+    skip_spaces(&p);
+    if (ew_chat_remote_set_text(p) != 0) {
+      printf("[ew-ctl] input failed\n");
+    } else {
+      printf("[ew-ctl] input ok bytes=%u\n", (unsigned)strlen(p));
+    }
+    return;
+  }
+
+  if (strcmp(verb, "submit") == 0) {
+    skip_spaces(&p);
+    if (ew_chat_remote_set_text(p) != 0 ||
+        ew_chat_remote_key("enter") != 0) {
+      printf("[ew-ctl] submit failed\n");
+    } else {
+      printf("[ew-ctl] submit ok bytes=%u\n", (unsigned)strlen(p));
+    }
+    return;
+  }
+
+  if (strcmp(verb, "key") == 0) {
+    parse_token(&p, a, sizeof(a));
+    if (ew_chat_remote_key(a) != 0) {
+      printf("[ew-ctl] key failed: %s\n", a);
+    } else {
+      printf("[ew-ctl] key ok: %s\n", a);
+    }
+    return;
+  }
+
+  if (strcmp(verb, "mimo-set") == 0) {
+    char key[160];
+    char result[96];
+
+    parse_token(&p, key, sizeof(key));
+    if (key[0] == '\0') {
+      printf("[ew-ctl] mimo config failed: missing key\n");
+    } else if (ew_llm_configure_mimo(key, result, sizeof(result)) != 0) {
+      printf("[ew-ctl] mimo config failed: %s\n", result);
+    } else {
+      printf("[ew-ctl] %s\n", result);
+    }
+    memset(key, 0, sizeof(key));
+    return;
+  }
+
+  if (strcmp(verb, "mimo-rollback") == 0) {
+    char result[96];
+
+    if (ew_llm_restore_config(result, sizeof(result)) != 0) {
+      printf("[ew-ctl] mimo rollback failed: %s\n", result);
+    } else {
+      printf("[ew-ctl] %s\n", result);
+    }
     return;
   }
 
@@ -296,10 +458,18 @@ static void ctl_dispatch(const char *line)
     parse_token(&p, a, sizeof(a));
     if (a[0] == '\0' || strcmp(a, "snap") == 0) {
       ew_mirror_snap_once();
-    } else if (strcmp(a, "on") == 0 || strcmp(a, "1") == 0) {
-      ew_mirror_set_enabled(1);
     } else if (strcmp(a, "off") == 0 || strcmp(a, "0") == 0) {
       ew_mirror_set_enabled(0);
+    } else if (strcmp(a, "hd") == 0 || strcmp(a, "quality") == 0) {
+      ew_mirror_set_mode(EW_MIRROR_HD);
+      ew_mirror_set_enabled(1);
+    } else if (strcmp(a, "normal") == 0 || strcmp(a, "std") == 0) {
+      ew_mirror_set_mode(EW_MIRROR_NORMAL);
+      ew_mirror_set_enabled(1);
+    } else if (strcmp(a, "fast") == 0 || strcmp(a, "on") == 0 ||
+               strcmp(a, "1") == 0) {
+      ew_mirror_set_mode(EW_MIRROR_FAST);
+      ew_mirror_set_enabled(1);
     } else {
       ew_mirror_set_enabled(!ew_mirror_enabled());
     }
@@ -356,6 +526,27 @@ static void ctl_dispatch(const char *line)
     return;
   }
 
+  if (strcmp(verb, "touch") == 0) {
+    int x;
+    int y;
+
+    parse_token(&p, a, sizeof(a));
+    parse_token(&p, b, sizeof(b));
+    parse_token(&p, c, sizeof(c));
+    x = b[0] != '\0' ? atoi(b) : 195;
+    y = c[0] != '\0' ? atoi(c) : 225;
+    if (strcmp(a, "down") == 0) {
+      ctl_touch_down((int16_t)x, (int16_t)y);
+    } else if (strcmp(a, "move") == 0) {
+      ctl_touch_move((int16_t)x, (int16_t)y);
+    } else if (strcmp(a, "up") == 0) {
+      ctl_touch_up((int16_t)x, (int16_t)y);
+    } else {
+      printf("[ew-ctl] touch ? use down|move|up x y\n");
+    }
+    return;
+  }
+
   if (strcmp(verb, "ping") == 0) {
     ew_wifi_at_ping();
     return;
@@ -367,6 +558,7 @@ static void ctl_dispatch(const char *line)
   }
 
   if (strcmp(verb, "scan") == 0 || strcmp(verb, "join") == 0 ||
+      strcmp(verb, "forget") == 0 ||
       strcmp(verb, "ask") == 0) {
     ctl_spawn_worker(line);
     return;

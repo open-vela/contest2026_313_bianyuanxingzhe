@@ -50,8 +50,9 @@
 
 ```text
 ew wifi                     链路状态 + 已保存的 SSID
-ew wifi scan                列出周边网络
-ew wifi join <ssid> [pass]  连接并记住
+ew wifi scan                列出周边网络（含定向补扫 hint）
+ew wifi probe <ssid>        只扫一个 SSID（华为热点漏扫时用）
+ew wifi join <ssid> [pass]  连接并记住（SSID 含空格用引号）
 ew wifi forget              断开并清除凭证
 ew wifi ping                AT 握手
 ew at AT+CIFSR              原始 AT
@@ -82,6 +83,22 @@ ew alert strong test     # 手动 Tool 链
 ```
 
 独立 ai_agent 固件：`sync_and_build.sh` → `artifacts/nuttx_ai_agent.bin`
+
+MiMo Token Plan 使用中国集群端点
+`token-plan-cn.xiaomimimo.com:443/v1/chat/completions` 和模型 `mimo-v2.5`。
+密钥格式为 `tp-...`；不要把 API key 写入仓库或固件。Windows Host
+设置临时环境变量后执行（脚本会先验证 Windows 直连，再写入开发板）：
+
+```powershell
+$env:MIMO_API_KEY = "<本机密钥>"
+python scripts/host/mimo_configure.py --port COM7
+Remove-Item Env:MIMO_API_KEY
+```
+
+也可用 `[Environment]::SetEnvironmentVariable('MIMO_API_KEY','<本机密钥>','User')`
+供调试助手在后续进程读取，验收后从用户环境删除。脚本通过 `@mimo-set` 写入板端
+`/data/ai_agent/config/config.json`，只保存脱敏日志。
+`@mimo-rollback` 可恢复首次更新前的 `config.json.bak`。
 
 ## 开发辅助（非赛题必测）
 
