@@ -39,8 +39,24 @@ tools/vmware/**
 .DS_Store
 Thumbs.db
 *.swp
+__pycache__/
+*.py[cod]
 .vscode/
 .idea/
+
+# Local analysis and media-production scratch files
+.tmp_video_frames/
+tmp_contact*/
+tmp_frames/
+tmp_sheets/
+
+# Portal-only deliverables and large source footage (packed under dist/)
+docs/提交材料/*.mp4
+docs/提交材料/video/
+docs/提交材料/archive/demo_work/demo_clips/
+docs/提交材料/archive/supplemental_cursor_logs/
+docs/提交材料/archive/report_work/assets/extra/
+tools/ld2451/
 
 # Secrets
 .env
@@ -48,6 +64,7 @@ Thumbs.db
 credentials.json
 VMware_share/key.txt
 app/edge_walker/ew_wifi_secret.h
+app/edge_walker/ew_mimo_bootstrap.h
 VMware_share/mailbox/host_to_guest/wifi_join.txt
 
 # Local Cursor / VM share dumps (skills & hooks stay local — not pushed)
@@ -61,6 +78,8 @@ VMware_share/*.py
 VMware_share/*.txt
 VMware_share/*.sh
 !VMware_share/README.md
+VMware_share/AGENT_BUS.md
+VMware_share/scripts/
 *.lnk
 
 # NOTE: Do NOT ignore logs/ final AI Coding exports.
