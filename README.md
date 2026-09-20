@@ -4,7 +4,7 @@
 
 ## 一、作品简介
 
-面向骑行/步行场景的**后方来车接近预警**原型：毫米波雷达感知接近目标，在 **SF32LB52-DevKit-LCD（openvela）** 上完成本地解析与门限决策，并给出可感知告警（蜂鸣 / LCD / LED 等，输出抽象为 `alert_output`）。
+面向骑行/步行场景的**后方来车接近预警**原型：毫米波雷达感知自行车（含共享单车）及静音电动车等接近目标，在 **SF32LB52-DevKit-LCD（openvela）** 上完成本地解析与门限决策，并给出可感知告警（蜂鸣 / LCD / LED 等，输出抽象为 `alert_output`）。
 
 最小闭环：
 
@@ -119,7 +119,7 @@ ew alert none      → 回 EW READY
 
 **赛题 Agent（已实现）：** `ew boot` 安装 Skill `approach-warn`（`/data/ai_agent/skills/`），雷达越限经 `ew_agent_proactive_alert` → Tool `approach_alert` → `alert_output()`。演示：`ew fake 10 20`，串口见 `[ew_agent]`、`[alert_output]`。详见 [`app/edge_walker/README.md`](app/edge_walker/README.md)。
 
-**提交进度：** 代码在 [`feature/host-edge-walker`](https://github.com/zixuanzheng2007-stack/contest2026_313_bianyuanxingzhe/tree/feature/host-edge-walker) → [PR #4](https://github.com/open-vela/contest2026_313_bianyuanxingzhe/pull/4) 合入 `dev-ai-contest-2026`（CLA ✅）。技术报告见 [`docs/提交材料/边缘行者_技术报告_V1.0.md`](docs/提交材料/边缘行者_技术报告_V1.0.md)。
+**提交进度：** PR #6、#7、#8 已合入 `dev-ai-contest-2026`；PR #9 已创建且当前无冲突、CLA 通过，待合并。技术报告见 [`docs/提交材料/边缘行者_技术报告_V1.0.md`](docs/提交材料/边缘行者_技术报告_V1.0.md)。
 
 ## 六、AI Coding 使用说明
 
@@ -131,12 +131,9 @@ ew alert none      → 回 EW READY
 | `c06c0b41-…` | 专属仓 fork / `dev-ai-contest-2026` 分支确认 |
 | `df773b3a-…` | 主开发会话：方案、文档、雷达、板端检测烧录至提交整理 |
 
-完整对话见 [`logs/zixuanzheng2007-stack/`](logs/zixuanzheng2007-stack/)：
+官方有效日志见 [`logs/zixuanzheng2007-stack/`](logs/zixuanzheng2007-stack/)；Cursor 原始记录移至 [`docs/提交材料/archive/supplemental_cursor_logs/`](docs/提交材料/archive/supplemental_cursor_logs/)，仅用于人工追溯，不计入官方有效工时。
 
-- 转换后的竞赛 schema JSONL：`cursor__<sid>.jsonl`
-- **原始 Cursor transcript**：同日目录下 `raw/<sid>.jsonl`
-
-> **合规说明**：官方自动采集工具支持 Claude Code / OpenCode / Codex / AIoT-IDE。Cursor 不在官方自动采集列表。本仓已将 Cursor 全过程原始日志按手册 schema **手工归档**，便于评委追溯。完成 `repo sync` 后请安装 `contest-log-collector`，后续优先在官方支持工具内开发，使有效工时自动入仓。
+> **合规说明**：官方工具最新版本已支持 Cursor SQLite backfill。2026-09-19 在 Host 与 Guest 实际运行后，本项目旧会话因采用 Agent transcript/旧存储格式而未匹配到 Composer，因此不冒充官方 backfill 结果；`logs/` 保留通过官方校验的记录，历史 Cursor 文件未删除或改写。
 
 ## 七、官方必读（组委会）
 

@@ -5,26 +5,47 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TEAM_SUFFIX = "contest2026_313_bianyuanxingzhe"
+MIN_DEMO_SECONDS = 30
+MAX_DEMO_SECONDS = 300
+SUBMISSION_PHOTOS = (
+    "01_正面.jpg",
+    "02_接线.jpg",
+    "03_运行_SOFT.jpg",
+    "04_EW_READY对照.jpg",
+)
 
 
 def material_dir() -> Path:
-    hits = list(ROOT.glob("docs/*/*V1.0.docx"))
+    hits = list(ROOT.glob("docs/*/*技术报告_V1.0.md"))
     if not hits:
         hits = list(ROOT.glob(f"docs/*/*{TEAM_SUFFIX}.pdf"))
     if not hits:
-        raise SystemExit("cannot locate docs submission folder (expected docs/*/*V1.0.docx)")
+        raise SystemExit("cannot locate docs submission folder")
     return hits[0].parent
 
 
 def find_file(mat: Path, name: str) -> Path | None:
     p = mat / name
     return p if p.is_file() else None
+
+
+def video_duration(path: Path) -> float | None:
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=nokey=1:noprint_wrappers=1", str(path)],
+            capture_output=True, text=True, check=True,
+        )
+        return float(result.stdout.strip())
+    except (FileNotFoundError, subprocess.CalledProcessError, ValueError):
+        return None
 
 
 def main() -> int:
@@ -47,13 +68,24 @@ def main() -> int:
     ):
         ok = bool(path and path.exists())
         if label == "photos/" and ok:
-            ok = any(photos.glob("*.jpg")) or any(photos.glob("*.png"))
+            ok = all((photos / name).is_file() for name in SUBMISSION_PHOTOS)
         status = "OK" if ok else "MISSING"
         print(f"[{tag}] {status}  {label}")
         if path:
             print(f"      {path}")
         if not ok and required:
             missing.append(label)
+
+    if mp4:
+        duration = video_duration(mp4)
+        if duration is None:
+            print("[P0] WARN  demo duration not checked (ffprobe unavailable)")
+        elif not MIN_DEMO_SECONDS <= duration <= MAX_DEMO_SECONDS:
+            print(f"[P0] INVALID demo duration: {duration:.2f}s "
+                  f"(expected {MIN_DEMO_SECONDS}-{MAX_DEMO_SECONDS}s)")
+            missing.append("valid demo duration")
+        else:
+            print(f"[P0] OK  demo duration: {duration:.2f}s")
 
     if args.check_only:
         if missing:
@@ -75,8 +107,11 @@ def main() -> int:
     assert pdf and mp4
     shutil.copy2(pdf, staging / pdf.name)
     shutil.copy2(mp4, staging / mp4.name)
-    if photos.is_dir() and (list(photos.glob("*.jpg")) or list(photos.glob("*.png"))):
-        shutil.copytree(photos, staging / "photos")
+    if photos.is_dir():
+        photo_out = staging / "photos"
+        photo_out.mkdir()
+        for name in SUBMISSION_PHOTOS:
+            shutil.copy2(photos / name, photo_out / name)
 
     zip_path = out_dir / f"边缘行者-边缘行者-{TEAM_SUFFIX}.zip"
     zip_path.parent.mkdir(parents=True, exist_ok=True)

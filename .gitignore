@@ -54,8 +54,17 @@ tmp_sheets/
 docs/提交材料/*.mp4
 docs/提交材料/video/
 docs/提交材料/archive/demo_work/demo_clips/
+docs/提交材料/archive/demo_work/*.pdf
 docs/提交材料/archive/supplemental_cursor_logs/
-docs/提交材料/archive/report_work/assets/extra/
+docs/提交材料/archive/report_work/assets/extra/*
+!docs/提交材料/archive/report_work/assets/extra/05_WiFi页.jpg
+!docs/提交材料/archive/report_work/assets/extra/06_Agent页.jpg
+!docs/提交材料/archive/report_work/assets/extra/08_ESP32模块_正面.jpg
+!docs/提交材料/archive/report_work/assets/extra/11_NO_RADAR.jpg
+!docs/提交材料/archive/report_work/assets/extra/15_MiMo用量统计.png
+docs/提交材料/archive/report_work/*.pdf
+docs/提交材料/archive/report_work/*.docx
+docs/提交材料/archive/report_work/_template_extract.txt
 tools/ld2451/
 
 # Secrets

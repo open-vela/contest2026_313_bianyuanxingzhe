@@ -1,13 +1,18 @@
-# 作品展示照片（官网 zip 选交 / 技术报告插图）
+# 作品展示照片
 
-命名建议（jpg/png，≥1280px 宽）：
+来源：2026-09-08～09-19 台架拍摄；**2026-09-19 批量更新**（13 张 Chat 附件入库）。
+
+## 主目录（官网 zip / 报告插图）
 
 | 文件 | 内容 |
 |------|------|
-| `01_正面.jpg` | DevKit-LCD + LD2451 + 蜂鸣器全貌 |
-| `02_接线.jpg` | UART2 雷达线、PA28 蜂鸣、ESP AT 线清晰 |
-| `03_预警橙.jpg` | 屏显 WARN 橙 + 蜂鸣响 |
-| `04_预警红.jpg` | 屏显 CRIT 红（或 EW READY 蓝底对照） |
+| `01_正面.jpg` | DevKit-LCD + LD2451 + ESP + 蜂鸣器整体接线 |
+| `02_接线.jpg` | HLK-LD2451 ↔ ESP UART 特写 |
+| `03_运行_SOFT.jpg` | 预警页 SOFT R 0.0m（黄底） |
+| `04_EW_READY对照.jpg` | 蓝底 EW READY 待机 |
 
-拍完后自检：`python scripts/submission/pack_submission.py --check-only`  
-齐 PDF + mp4 + photos 后：`python scripts/submission/pack_submission.py`
+报告补充图片、规格参考和架构图已移至 `../archive/report_work/assets/`，不会进入官网 zip。
+
+Demo 视频：`../边缘行者-Demo-contest2026_313_bianyuanxingzhe.mp4`
+
+打包：`python scripts/submission/pack_submission.py`
