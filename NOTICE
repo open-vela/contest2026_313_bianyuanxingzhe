@@ -34,11 +34,21 @@ Implementation references (interfaces / documented patterns, not copied source):
 
 Runtime assets (not included in this repository):
 
-  * MiSans or other CJK fonts — if deployed to /data/font/ on device, follow
-    the font vendor license separately.
+  * Optional Source Han Sans or Noto Sans CJK fonts may be deployed to
+    /data/font/ under the SIL Open Font License 1.1. The application does not
+    require an external font to start or render its built-in Chinese UI.
 
   * Xiaomi MiMo API — contest-provided cloud LLM; credentials via runtime
     /data/ai_agent/config/config.json only.
+
+Embedded font asset:
+
+  * app/edge_walker/ew_font_cjk_18.c — LVGL bitmap subset generated from
+    Adobe Source Han Sans CN Bold. Source Han Sans is licensed under the SIL
+    Open Font License 1.1. The original font file is not redistributed here.
+    Full license: THIRD_PARTY_LICENSES/SourceHanSans-OFL-1.1.txt
+    https://github.com/adobe-fonts/source-han-sans
+    https://openfontlicense.org/open-font-license-official-text/
 
 Hardware documentation:
 

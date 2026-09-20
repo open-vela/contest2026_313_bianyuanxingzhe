@@ -23,6 +23,10 @@ void ew_wifi_ui_tick(void);
 /* 离开本页 */
 void ew_wifi_ui_teardown(void);
 
+/* PC keyboard routing for the currently active SSID/password field. */
+int ew_wifi_ui_remote_set_text(const char *text);
+int ew_wifi_ui_remote_key(const char *key);
+
 #ifdef __cplusplus
 }
 #endif
