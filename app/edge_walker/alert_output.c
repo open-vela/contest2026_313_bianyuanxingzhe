@@ -31,10 +31,31 @@ static const char *level_name(ew_alert_level_t level)
 
 void alert_output(ew_alert_level_t level, const char *reason)
 {
+  alert_output_event(level, reason, 0);
+}
+
+void alert_output_event(ew_alert_level_t level, const char *reason,
+                        unsigned long event_id)
+{
+  (void)alert_output_event_checked(level, reason, event_id, false);
+}
+
+int alert_output_event_checked(ew_alert_level_t level, const char *reason,
+                               unsigned long event_id, bool safety_owned)
+{
+  int ret;
+  if (event_id != 0) {
+    printf("[ew_event] event_id=%lu stage=alert_output level=%s\n",
+           event_id, level_name(level));
+  }
   printf("[alert_output] level=%s reason=%s\n",
          level_name(level), reason ? reason : "");
   fflush(stdout);
 
-  alert_buzzer_level(level);
-  alert_lcd_show(level, reason);
+  ret = safety_owned ? alert_lcd_show_safety_event(level, reason, event_id) :
+                       alert_lcd_show_event_checked(level, reason, event_id);
+  /* A queued request is executed by the IPC consumer. Rejected requests must
+   * not leave a manual buzzer running as a hidden partial side effect. */
+  if (!safety_owned && ret == 0) alert_buzzer_level(level);
+  return ret;
 }

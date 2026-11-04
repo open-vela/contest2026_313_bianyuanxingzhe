@@ -79,10 +79,39 @@ ew ask <text>               不开 UI 问一次大模型
 ```text
 ew boot                  # 安装 /data/ai_agent/skills/approach-warn.md
 ew fake 10 20            # 应见 [ew_agent] proactive … [alert_output] …
-ew alert strong test     # 手动 Tool 链
+ew alert strong test     # 直接测试告警出口（不经过 Agent/Tool）
 ```
 
-独立 ai_agent 固件：`sync_and_build.sh` → `artifacts/nuttx_ai_agent.bin`
+`ew fake`、PC 遥控 `@fake` 与真实雷达共用本地 `ew_agent_proactive_alert` → Tool →
+`alert_output` 路径，每次调用打印同一 `event_id` 的 decision、agent、tool、
+alert_output、complete 五段日志。编号在当前 ew 运行实例内递增，重启后重置；
+`complete result=0` 表示调用返回成功，仍需真机确认声音、屏幕和 IPC 消费。
+fake 只模拟目标判决，不覆盖 UART 解码和连续帧保持。
+
+这条本地调用链不代表独立 `ai_agent` 注册表已经执行 Tool。
+独立固件用 `sync_and_build.sh` 构建，输出为
+`cmake_out/sf32lb52_devkit_lcd_ai_agent/nuttx.bin`；脚本会校验 Tool 注入并保存
+`.ew_agent_patch_stamp` 文件哈希。设置 `EW_PATCH_ONLY=1` 可仅校验注入。
+
+独立 Agent 的 `approach_alert` 必须提供合法 `level`，可选 `reason` 和
+`event_id`。Tool 返回 `status=queued` 只表示请求完整发布；预警页消费请求、
+调用蜂鸣和 UI 后，才记录 `[ew_ipc] stage=applied` 和 `stage=ack`，并写入
+`/data/ew_alert.req.ack`。这些记录证明软件调用完成，持续画面与声音仍需真机验证；
+雷达刷新会继续更新预警页。单槽忙时明确返回 `busy`，不会覆盖前一请求；
+必须等待相同 `event_id` 的 ACK 后再发送下一条。
+
+跨进程请求使用 `/data/ew_alert.req.lock/` 临时目录和原子重命名，拒绝非法
+等级、坏 JSON、过长原因及写入错误。预警页未运行时，请求保持排队。
+进程异常退出或 ACK 写入失败可能保留占槽文件；恢复时先停止相关进程，
+再移除 `/data/ew_alert.req`、`.mutex`，以及 `.lock` 目录中的
+staging/processing/consumer/ack.tmp 和空的 `.lock` 后重启，勿在活跃事务中清锁。
+NuttX flat 构建中，本地 JSON 入口为
+`ew_agent_tool_execute`，独立 IPC 注册入口为 `tool_approach_alert_execute`。
+
+`scripts/guest/build_ew_main.sh` 支持 `OPENVELA`、`CONTEST`、`BUILD_DIR`、
+`ARTIFACT_DIR` 路径覆盖，保留现有增量构建和配置。只有编译成功且镜像非空时
+才导出 `nuttx.bin`、`nuttx.bin.sha256` 与 `nuttx.build.txt`；构建失败保留原交付物。
+烧录前确认 SHA256 与元数据一致，未提交源码的来源另记为 source_sha256。
 
 MiMo Token Plan 使用中国集群端点
 `token-plan-cn.xiaomimimo.com:443/v1/chat/completions` 和模型 `mimo-v2.5`。
@@ -109,6 +138,12 @@ Remove-Item Env:MIMO_API_KEY
 
 ## 改完代码怎么验
 
+仓库根目录执行 `python -m pip install -r requirements-test.txt`，再执行
+`python scripts/host/run_tests.py`，统一运行 host_smoke 和全部无硬件 Python 回归。
+需要 GCC、Bash、Python Tk 支持；Windows 可使用 MSYS2 UCRT64 GCC 并将其 bin 加入 PATH，
+Bash 使用 MSYS2 或 Git for Windows。
+环境依赖缺失返回 2，测试失败返回 1，全通过返回 0。
+
 ```bash
 # 主机侧回归，不需要板子
 gcc -O2 -Wall -Wextra -o /tmp/host_smoke host_smoke.c ew_ld2451.c && /tmp/host_smoke
@@ -120,3 +155,48 @@ ninja -C ~/openvela/cmake_out/sf32lb52_devkit_lcd
 产物 `cmake_out/sf32lb52_devkit_lcd/nuttx.bin`，烧录地址 `0x12010000`。
 
 屏接线说明见 [`docs/硬件/DevKit-LCD.md`](../../docs/硬件/DevKit-LCD.md)。
+
+## 只读手机状态接口（2026-10-24 新增）
+
+路测数据接口另见文末的“路测记录”。
+
+含本次实现的固件在 UI 运行时支持 `@snapshot <request_id>`。ID 为 1—48 个 ASCII 字母、数字、下划线或连字符，不接受截断、额外参数或控制字符。回复为 `[ew-snapshot] ` 前缀后的单行 JSON。
+
+接口复制独立安全线程的状态后再序列化，不调用网络 AT、不修改门限/告警，也不让安全线程写控制台。缺少、无效或过期测量为 null；告警保持等级单独保留。`event_id` 是原告警事件，`snapshot_seq` 是快照序号；`updated_ms` 是设备单调时钟，不能作为日期。
+
+PC 入口为 `scripts/host/mobile_serial_gateway.py`，仅回环网络监听和只读 `hello/get_state/subscribe_state`。它使用每会话随机请求前缀匹配新响应，设备重启时关闭旧会话；不会自动扫描/复位/烧录或执行模型、配置和告警命令。
+
+本次完成主机回归和真实 ARM 对象编译，尚无新完整固件的链接、烧录及真机验收。软件证据见 `docs/协作/手机只读网关验收_2026-10-24.md`。
+
+## 路测记录（2026-10-28）
+
+### 实时观测与方向修复（2026-10-31）
+
+预警页新增原始报告速度、方向解释、距离、TTC、DIR原码、SNR、模块报警位、
+帧内目标索引和最新帧判决/过滤原因。大字仍显示保持中的报警等级；下方数字
+来自最新合法帧，两者可以短暂不同。方向解释经本次接近试验确认，当前默认1为靠近。
+空帧立即显示NO TARGET与`--`；距最后合法帧超过1500ms显示STALE FRAME与`--`。
+FRAME AGE是UART接收后经过的时间，不是雷达内部测量延迟。被策略过滤的目标
+仍可显示数值；多目标优先显示该帧策略选中的目标，无策略候选时显示最近原始目标。
+
+2026-10-31实测确认固定雷达前的接近目标上报DIR1，默认映射现为DIR1接近、DIR0远离。
+观测区用`LAST FRAME`标记上一帧判决，`ALARM`显示与上方大字一致的当前报警，
+避免报警保持结束而测量尚未过期时把旧帧判决误当当前报警。
+
+`@radar-diag <id>`新增`build=ew-radar-20261031-r2`、`direction_approach`及
+`measurement`对象，当前观测与保持中的报警元数据分开。使用
+`roadtest_capture.py ... --diagnostics`最多约每秒记录一次新诊断；原始记录积压时优先排空，辅助查询频率随之降低。旧`@road`协议标签
+保持兼容，镜像身份仍需核对SHA256和安装记录。现场验收见
+`docs/方案/雷达分级修复验收_2026-10-31.md`。
+
+`@road <id> on|poll|off` 开启、读取、停止有界原始记录，默认关闭。
+唯一雷达读取者复制字节及单调毫秒时刻，128 条缓存；无字节轮次保存空记录。
+每次 poll 最多取 32 条，控制台端在锁外格式化。满时丢最旧记录并计数，
+不在安全线程写串口或等待电脑。off 后可继续 poll 排空，新 on 重置计数。
+启动时可能已有报警保持，每条预留 5 秒空场。
+
+采集入口 `scripts/host/roadtest_capture.py`，原始 CSV 可用
+`radar_replay.py` 通过生产 C 代码回放。序号缺口和丢包必须保留；
+协议完整不代表实体报警有效。详见
+[路测方案](../../docs/方案/路测方案_2026-10-29.md)。
+

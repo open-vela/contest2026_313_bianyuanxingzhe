@@ -10,6 +10,8 @@
 #ifndef EDGE_WALKER_ALERT_OUTPUT_H
 #define EDGE_WALKER_ALERT_OUTPUT_H
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,6 +25,14 @@ typedef enum {
 
 /* 档位：NONE 静音 … EMERGENCY 紧急。reason 可为 NULL。 */
 void alert_output(ew_alert_level_t level, const char *reason);
+
+/* Correlation for the local proactive chain; zero denotes an untraced call. */
+void alert_output_event(ew_alert_level_t level, const char *reason,
+                        unsigned long event_id);
+/* 0 = UI callback, 1 = queued, negative = delivery failed. None of these
+ * statuses proves an acoustic or optical measurement. */
+int alert_output_event_checked(ew_alert_level_t level, const char *reason,
+                               unsigned long event_id, bool safety_owned);
 
 #ifdef __cplusplus
 }

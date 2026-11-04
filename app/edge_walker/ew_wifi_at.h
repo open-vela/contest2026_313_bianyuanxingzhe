@@ -74,6 +74,12 @@ int ew_wifi_at_diag(void);
 /* 打印 GMR / CWMODE? / CWJAP? / CIPSTA? 到控制台 */
 int ew_wifi_at_status(void);
 
+/* Optional bounded phone-hotspot experiment. Serial start provisions a
+ * temporary pairing code; no automatic listener or credential disclosure. */
+int ew_wifi_direct_start(const char *code, unsigned port);
+void ew_wifi_direct_stop(void);
+void ew_wifi_direct_status(void);
+
 /* ---- 连接管理 ---- */
 
 /* 查询当前状态；ip 可为 NULL。check_inet=1 时额外做一次公网 PING。 */

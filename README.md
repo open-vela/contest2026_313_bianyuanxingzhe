@@ -1,6 +1,8 @@
 # 边缘行者（Bian Yuan Xing Zhe）
 
-队伍专属仓：`contest2026_313_bianyuanxingzhe` · 截止 **2026-09-20**
+队伍专属仓：`contest2026_313_bianyuanxingzhe` · 初赛提交 **2026-09-20**
+
+[决赛候选版说明与验收范围](docs/提交材料/决赛候选版说明.md)
 
 ## 一、作品简介
 

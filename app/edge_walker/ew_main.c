@@ -15,6 +15,7 @@
 #include "ew_llm.h"
 #include "ew_wifi_at.h"
 #include "ew_agent.h"
+#include "ew_safety.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,16 +39,26 @@ static int cmd_alert(int argc, char **argv)
       level = EW_ALERT_STRONG;
     } else if (strcmp(argv[2], "crit") == 0 || strcmp(argv[2], "3") == 0) {
       level = EW_ALERT_EMERGENCY;
-    } else {
+    } else if (strcmp(argv[2], "soft") == 0 || strcmp(argv[2], "1") == 0) {
       level = EW_ALERT_SOFT;
+    } else if (strcmp(argv[2], "emergency") == 0) {
+      level = EW_ALERT_EMERGENCY;
+    } else {
+      printf("[ew] invalid alert level\n");
+      return 1;
     }
   }
   if (argc >= 4) {
     reason = argv[3];
   }
 
-  alert_output(level, reason);
-  return 0;
+  {
+    ew_decision_t decision = {0};
+    decision.level = level;
+    decision.ttc_s = -1.0f;
+    decision.reason = reason;
+    return ew_agent_emit_decision(&decision, EW_EVENT_SOURCE_MANUAL);
+  }
 }
 
 static int cmd_buzz(int argc, char **argv)
@@ -83,8 +94,7 @@ static int cmd_fake(int argc, char **argv)
   d = ew_decide(&t);
   printf("[ew] fake range=%.1fm speed=%.1f approaching=%d -> %s\n",
          t.range_m, t.speed_kmh, (int)t.approaching, d.reason);
-  alert_output(d.level, d.reason);
-  return 0;
+  return ew_agent_emit_decision(&d, EW_EVENT_SOURCE_FAKE);
 }
 
 /* NSH 可能把带空格 SSID 拆成多个 argv，合并 [from..to] 后再 parse_cli_token */
@@ -264,59 +274,29 @@ static int cmd_ask(int argc, char **argv)
 static int cmd_loop(void)
 {
 #ifdef __NuttX__
-  uint8_t buf[64];
-  ew_track_t track;
-  ew_hold_t hold;
-  ew_sniff_stats_t sniff;
-  ew_alert_level_t last = EW_ALERT_NONE;
-  int fd = open(EW_RADAR_DEV, O_RDONLY);
-
-  if (fd < 0) {
-    printf("[ew] open %s failed\n", EW_RADAR_DEV);
+  ew_alert_level_t last = (ew_alert_level_t)-1;
+  ew_link_t last_link = (ew_link_t)-1;
+  int ret = ew_safety_start();
+  if (ret != 0) {
+    printf("[ew-safety] start failed result=%d\n", ret);
     return 1;
   }
-
-  ew_hold_reset(&hold);
-  memset(&sniff, 0, sizeof(sniff));
-  printf("[ew] reading %s, Ctrl-C to stop\n", EW_RADAR_DEV);
-
+  printf("[ew] observing independent radar safety task on %s\n", EW_RADAR_DEV);
   for (;;) {
-    ew_sniff_stats_t before = sniff;
-    const ew_track_t *tp = NULL;
-    bool had_bytes = false;
-    bool had_frame = false;
-    ew_decision_t d;
-    struct timespec ts;
-    uint32_t now = 0;
-    int n = read(fd, buf, sizeof(buf));
-
-    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-      now = (uint32_t)((uint64_t)ts.tv_sec * 1000u +
-                       (uint64_t)ts.tv_nsec / 1000000u);
+    ew_safety_snapshot_t safety;
+    ew_safety_snapshot(&safety);
+    if (safety.decision.level != last || safety.decision.link != last_link) {
+      printf("[ew] safety %s range=%.1fm %s link=%d frames=%lu error=%d\n",
+             ew_alert_level_name(safety.decision.level), safety.decision.range_m,
+             safety.decision.reason, (int)safety.decision.link,
+             (unsigned long)safety.sniff.frames_ok, safety.radar_error);
+      last = safety.decision.level;
+      last_link = safety.decision.link;
     }
-
-    if (n > 0) {
-      had_bytes = true;
-      memset(&track, 0, sizeof(track));
-      if (ew_ld2451_feed_sniff(buf, (unsigned)n, &sniff, &track) &&
-          track.valid) {
-        tp = &track;
-      }
-      had_frame = (sniff.frames_ok > before.frames_ok);
-    } else {
-      usleep(20000);
-    }
-
-    d = ew_hold_update(&hold, now, had_bytes, had_frame, tp);
-    if (d.level != last) {
-      printf("[ew] latch %s range=%.1fm %s link=%d\n",
-             ew_alert_level_name(d.level), d.range_m, d.reason, (int)d.link);
-      ew_agent_proactive_alert(d.level, d.range_m, d.reason);
-      last = d.level;
-    }
+    usleep(20000);
   }
 #else
-  printf("[ew] host stub: try `ew fake 10 2` or `ew alert soft`\n");
+  printf("[ew] host stub: try `ew fake 10 20` or `ew alert soft`\n");
 #endif
   return 0;
 }
