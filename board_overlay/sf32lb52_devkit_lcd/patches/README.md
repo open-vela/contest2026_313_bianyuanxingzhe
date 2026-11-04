@@ -1,5 +1,22 @@
 # Wi-Fi UART3 RX DMA
 
+## UART receive boundary protection (2026-10-28)
+
+The final `uart_dma_rx_ring.patch` keeps the established UART/DMA transport.
+It acknowledges IDLE before publishing DMA bytes, normalizes the producer
+head at transfer-complete/circular reload, and drains pending DMA when RX
+is re-enabled. It also provides read-only UART diagnostic counters.
+
+Apply with `bash scripts/patches/devkit_uart_dma_ring.sh OPENVELA_ROOT`.
+Both build entry points apply it after the existing Wi-Fi DMA patch.
+Regression: `python scripts/host/test_uart_rx_stability.py`.
+
+Separate staging-buffer, IRQ-only and asynchronous-TX experiments were not
+accepted; their source and failed observations remain only in local output.
+The final fix does not alter UART baud rates, pins, alert thresholds or the
+1500ms raw data-staleness threshold. LD2451 quiet-idle display semantics are
+covered separately by `test_radar_view.py`.
+
 The 2026-09-18 board test measured 12 UART3 hardware overruns during boot
 queries with interrupt-driven RX. Frame and noise counters remained zero.
 With RX DMA enabled and the attached patch, boot and status queries reported

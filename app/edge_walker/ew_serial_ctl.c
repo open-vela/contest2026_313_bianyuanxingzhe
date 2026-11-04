@@ -9,9 +9,13 @@
 #include "ew_mirror.h"
 #include "alert_output.h"
 #include "ew_chat.h"
+#include "ew_agent.h"
 #include "ew_ld2451.h"
 #include "ew_llm.h"
 #include "ew_wifi_at.h"
+#include "ew_snapshot.h"
+#include "ew_radar_diag.h"
+#include "ew_uart_diag.h"
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -20,6 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
+#include <sys/ioctl.h>
 
 #ifdef __NuttX__
 #include <poll.h>
@@ -259,7 +265,8 @@ static ew_alert_level_t ctl_alert_level(const char *tok)
       strcmp(tok, "emergency") == 0) {
     return EW_ALERT_EMERGENCY;
   }
-  return EW_ALERT_SOFT;
+  if (strcmp(tok, "soft") == 0 || strcmp(tok, "1") == 0) return EW_ALERT_SOFT;
+  return (ew_alert_level_t)-1;
 }
 
 static void ctl_fake(float range_m, float speed)
@@ -276,7 +283,7 @@ static void ctl_fake(float range_m, float speed)
   t.ttc_s = t.approaching ? (t.range_m / (t.speed_kmh / 3.6f)) : -1.0f;
   d = ew_decide(&t);
   printf("[ew-ctl] fake %.1fm %.1fkm/h -> %s\n", range_m, speed, d.reason);
-  alert_output(d.level, d.reason);
+  (void)ew_agent_emit_decision(&d, EW_EVENT_SOURCE_SERIAL);
 }
 
 static void *ctl_worker(void *arg)
@@ -363,6 +370,89 @@ static void ctl_spawn_worker(const char *line)
   pthread_attr_destroy(&attr);
 }
 
+static void ctl_road(const char *arguments)
+{
+  char id[64], action[16];
+  unsigned i, pending;
+  uint32_t dropped;
+  bool enabled;
+  const char *p = arguments;
+  ew_road_record_t record;
+  parse_token(&p, id, sizeof(id));
+  parse_token(&p, action, sizeof(action));
+  skip_spaces(&p);
+  if (*p || !id[0] || strlen(id) > 48u) goto invalid;
+  for (i = 0; id[i]; i++) {
+    unsigned char c = (unsigned char)id[i];
+    if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+          (c >= '0' && c <= '9') || c == '_' || c == '-')) goto invalid;
+  }
+  if (!strcmp(action, "on")) ew_safety_road_enable(true);
+  else if (!strcmp(action, "off")) ew_safety_road_enable(false);
+  else if (strcmp(action, "poll")) goto invalid;
+  if (!strcmp(action, "poll")) {
+    /* Bounded drain; all formatting/serial writes are outside safety locks. */
+    for (i = 0; i < 32u && ew_safety_road_take(&record); i++) {
+      static const char hex[] = "0123456789abcdef";
+      char raw[129];
+      unsigned j;
+      for (j = 0; j < record.size; j++) {
+        raw[2u*j] = hex[record.bytes[j] >> 4];
+        raw[2u*j+1u] = hex[record.bytes[j] & 15u];
+      }
+      raw[2u*record.size] = '\0';
+      printf("[ew-road] {\"id\":\"%s\",\"seq\":%lu,\"timestamp_ms\":%lu,\"raw_hex\":\"%s\"}\n",
+             id, (unsigned long)record.seq, (unsigned long)record.timestamp_ms, raw);
+    }
+  }
+  ew_safety_road_status(&enabled, &dropped, &pending);
+  printf("[ew-road] {\"id\":\"%s\",\"end\":true,\"enabled\":%s,\"dropped\":%lu,\"pending\":%u,\"firmware\":\"ew-roadtest-20261028-rc1\"}\n",
+         id, enabled ? "true" : "false", (unsigned long)dropped, pending);
+  fflush(stdout);
+  return;
+invalid:
+  printf("[ew-road] {\"id\":null,\"error\":\"invalid_request\"}\n");
+  fflush(stdout);
+}
+
+static void ctl_radar_diag(const char *request_id)
+{
+  ew_safety_snapshot_t snapshot;
+  char message[EW_RADAR_DIAG_MAX_BYTES];
+
+  /* Only the existing safety owner reads radar bytes. This console handler
+   * copies its state, then formats outside the snapshot lock. */
+  ew_safety_snapshot(&snapshot);
+  if (ew_radar_diag_format(message, sizeof(message), request_id, &snapshot) < 0) {
+    printf("[ew-radar-diag] {\"v\":1,\"id\":null,\"error\":{\"code\":\"invalid_request\"}}\n");
+  } else {
+    printf("[ew-radar-diag] %s\n", message);
+  }
+  fflush(stdout);
+}
+
+static void ctl_snapshot(const char *request_id)
+{
+  static unsigned long sequence;
+  ew_safety_snapshot_t snapshot;
+  char message[512];
+
+  /* Existing UI/command consumer only. The safety task never formats or
+   * writes console data, and copying its snapshot performs no AT operation. */
+  ew_safety_snapshot(&snapshot);
+  sequence++;
+  if (sequence == 0) {
+    sequence++;
+  }
+  if (ew_snapshot_format(message, sizeof(message), request_id, &snapshot,
+                         sequence) < 0) {
+    printf("[ew-snapshot] {\"v\":1,\"id\":null,\"error\":{\"code\":\"invalid_request\"}}\n");
+  } else {
+    printf("[ew-snapshot] %s\n", message);
+  }
+  fflush(stdout);
+}
+
 static void ctl_dispatch(const char *line)
 {
   const char *p = line;
@@ -373,6 +463,70 @@ static void ctl_dispatch(const char *line)
 
   parse_token(&p, verb, sizeof(verb));
   if (verb[0] == '\0') {
+    return;
+  }
+
+  if (strcmp(verb, "direct") == 0) {
+    char action[24], code[40];
+    parse_token(&p, action, sizeof(action));
+    parse_token(&p, code, sizeof(code));skip_spaces(&p);
+    if (*p) { printf("[ew-direct] invalid arguments\n"); return; }
+    if (!strcmp(action,"start")) {
+      printf("[ew-direct] start requested result=%d (pairing code redacted)\n",ew_wifi_direct_start(code,8769));
+    } else if (!strcmp(action,"stop") && !code[0]) ew_wifi_direct_stop();
+    else if (!strcmp(action,"status") && !code[0]) ew_wifi_direct_status();
+    else printf("[ew-direct] invalid command\n");
+    fflush(stdout);return;
+  }
+
+  if (strcmp(verb, "sensitivity") == 0) {
+    char id[64];
+    char setting[32];
+    unsigned i;
+    int valid = 1;
+    parse_token(&p, id, sizeof(id));
+    parse_token(&p, setting, sizeof(setting));
+    skip_spaces(&p);
+    if (*p != '\0' || id[0] == '\0' || strlen(id) > 48) valid = 0;
+    for (i = 0; id[i]; i++) {
+      unsigned char v = (unsigned char)id[i];
+      if (!((v >= 'a' && v <= 'z') || (v >= 'A' && v <= 'Z') ||
+            (v >= '0' && v <= '9') || v == '_' || v == '-')) valid = 0;
+    }
+    if (strcmp(setting, "get") != 0 && strcmp(setting, "standard") != 0 &&
+        strcmp(setting, "early") != 0) valid = 0;
+    if (!valid) {
+      printf("[ew-sensitivity] {\"v\":1,\"id\":null,\"ok\":false}\n");
+    } else {
+      if (strcmp(setting, "get") != 0) {
+        (void)ew_sensitivity_set(strcmp(setting, "early") == 0
+                                 ? EW_SENSITIVITY_EARLY : EW_SENSITIVITY_STANDARD);
+      }
+      printf("[ew-sensitivity] {\"v\":1,\"id\":\"%s\",\"ok\":true,"
+             "\"profile\":\"%s\",\"factor\":%.2f,\"volatile\":true}\n",
+             id, ew_sensitivity_get() == EW_SENSITIVITY_EARLY ? "early" : "standard",
+             ew_sensitivity_get() == EW_SENSITIVITY_EARLY ? 1.25 : 1.0);
+    }
+    fflush(stdout);
+    return;
+  }
+
+  if (strcmp(verb, "road") == 0) {
+    ctl_road(p);
+    return;
+  }
+
+  if (strcmp(verb, "snapshot") == 0) {
+    /* Validate the full ID, without parse_token's silent truncation. */
+    skip_spaces(&p);
+    ctl_snapshot(p);
+    return;
+  }
+
+  if (strcmp(verb, "radar-diag") == 0) {
+    /* The full remaining argument is validated; extra parameters, trailing
+     * spaces and long IDs cannot silently turn into a different request. */
+    ctl_radar_diag(*p == ' ' ? p + 1 : "");
     return;
   }
 
@@ -387,12 +541,36 @@ static void ctl_dispatch(const char *line)
   }
 
   if (strcmp(verb, "help") == 0) {
+    printf("[ew-ctl] @uart-diag (read-only DMA receive counters)\n");
     printf("[ew-ctl] @goto warn|wifi|chat  @alert soft|strong|none\n");
     printf("[ew-ctl] @fake 10 20  @scan  @join SSID pass  @forget  @ask text\n");
     printf("[ew-ctl] @ping  @status  @tap x y  @touch down|move|up x y\n");
+    printf("[ew-ctl] @snapshot <request_id> (read-only safety snapshot)\n");
+    printf("[ew-ctl] @radar-diag <request_id> (read-only radar counters/sample)\n");
+    printf("[ew-ctl] @road <request_id> on|poll|off (bounded raw evidence)\n");
     printf("[ew-ctl] @mirror fast|on|normal|hd|off|snap\n");
     printf("[ew-ctl] @mimo-set <key>  @mimo-rollback\n");
     printf("[ew-ctl] @input/@submit <UTF-8 text>  @key backspace|tab|escape\n");
+    return;
+  }
+
+  if (strcmp(verb, "uart-diag") == 0) {
+#ifdef __NuttX__
+    const char *ports[] = {"/dev/console", "/dev/ttyS1"};
+    unsigned i;
+    for (i = 0; i < 2; ++i) {
+      ew_uart_rx_diag_t state = {0};
+      int fd = open(ports[i], O_RDONLY | O_NONBLOCK);
+      int ret = fd < 0 ? -1 : ioctl(fd, EW_UART_RX_DIAG, (unsigned long)&state);
+      if (fd >= 0) close(fd);
+      printf("[ew-uart] port=%s result=%d dma_bytes=%lu dma_events=%lu dropped=%lu overrun=%lu frame=%lu noise=%lu irq_bytes=%lu rx_dma=%lu\n",
+             ports[i], ret, (unsigned long)state.dma_bytes,
+             (unsigned long)state.dma_events, (unsigned long)state.dropped,
+             (unsigned long)state.overruns, (unsigned long)state.frame_errors,
+             (unsigned long)state.noise_errors, (unsigned long)state.irq_bytes,
+             (unsigned long)state.rx_dma_enabled);
+    }
+#endif
     return;
   }
 
@@ -490,7 +668,17 @@ static void ctl_dispatch(const char *line)
     if (*p != '\0') {
       reason = p;
     }
-    alert_output(ctl_alert_level(a), reason);
+    {
+      ew_decision_t decision = {0};
+      decision.level = ctl_alert_level(a);
+      decision.reason = reason;
+      decision.ttc_s = -1.0f;
+      if (decision.level < EW_ALERT_NONE) {
+        printf("[ew-ctl] invalid alert level\n");
+        return;
+      }
+      (void)ew_agent_emit_decision(&decision, EW_EVENT_SOURCE_SERIAL);
+    }
     return;
   }
 
@@ -575,18 +763,15 @@ static void *ctl_reader(void *arg)
 
   (void)arg;
   for (;;) {
-    struct pollfd pfd;
     char c;
     ssize_t n;
 
-    pfd.fd = fd;
-    pfd.events = POLLIN;
-    if (poll(&pfd, 1, 120) <= 0) {
-      continue;
-    }
+    /* A short DMA burst may not create a fresh IDLE/poll edge. Nonblocking
+     * reads also ask the UART driver to drain DMA on RX re-enable, so the
+     * final command bytes cannot wait indefinitely for a later packet. */
     n = read(fd, &c, 1);
     if (n != 1) {
-      usleep(50000);
+      usleep(10000);
       continue;
     }
     if (c == '\r' || c == '\n') {
@@ -617,9 +802,14 @@ void ew_serial_ctl_start(void)
   g_reader_started = 1;
   pthread_mutex_init(&g_q.mu, NULL);
 
-  fd = open("/dev/console", O_RDONLY);
+  fd = open("/dev/console", O_RDONLY | O_NONBLOCK);
   if (fd < 0) {
     fd = STDIN_FILENO;
+    int flags = fcntl(fd, F_GETFL);
+    if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+      printf("[ew-ctl] cannot enable nonblocking console\n");
+      return;
+    }
   }
   if (pthread_create(&tid, NULL, ctl_reader, (void *)(intptr_t)fd) != 0) {
     printf("[ew-ctl] reader thread failed\n");
@@ -632,7 +822,6 @@ void ew_serial_ctl_start(void)
 void ew_serial_ctl_poll(void)
 {
   char line[EW_CTL_LINE_MAX];
-
   while (q_pop(line, sizeof(line))) {
     ctl_dispatch(line);
   }

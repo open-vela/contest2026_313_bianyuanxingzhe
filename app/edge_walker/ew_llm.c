@@ -37,12 +37,21 @@
 #define EW_MIMO_HOST  "token-plan-cn.xiaomimimo.com"
 #define EW_MIMO_PATH  "/v1/chat/completions"
 #define EW_MIMO_PORT  "443"
-#define EW_MIMO_MODEL "mimo-v2.5"
+#define EW_MIMO_MODEL "mimo-v2.6-flash"
 
 #define EW_LLM_BODY "/tmp/ew_llm_body.json"
 #define EW_LLM_OUT  "/tmp/ew_llm_out.json"
 #define EW_LLM_CONFIG_TMP EW_LLM_CONFIG ".tmp"
 #define EW_LLM_CONFIG_BAK EW_LLM_CONFIG ".bak"
+
+static void migrate_mimo_model(const char *host, char *model, unsigned size)
+{
+  /* Existing runtime configurations must not override the supported default
+   * with the retired text model. Leave other providers/models unchanged. */
+  if (strcmp(host, EW_MIMO_HOST) == 0 && strcmp(model, "mimo-v2.5") == 0) {
+    snprintf(model, size, "%s", EW_MIMO_MODEL);
+  }
+}
 
 static int read_file(const char *path, char *buf, unsigned sz)
 {
@@ -346,6 +355,7 @@ ew_llm_result_t ew_llm_ask(const char *prompt, char *out, unsigned out_sz)
     ew_net_state_error(EW_NET_ERR_CONFIG);
     return EW_LLM_ERR_CONFIG;
   }
+  migrate_mimo_model(host, model, sizeof(model));
   printf("[ew-ask] config source=%s\n",
          have_runtime && runtime_key[0] != '\0' ? "runtime" : "bootstrap");
 
@@ -367,7 +377,7 @@ ew_llm_result_t ew_llm_ask(const char *prompt, char *out, unsigned out_sz)
 
   json_escape(prompt, esc, sizeof(esc));
   snprintf(body, sizeof(body),
-           "{\"model\":\"%s\",\"messages\":["
+           "{\"model\":\"%s\",\"max_completion_tokens\":384,\"messages\":["
            "{\"role\":\"system\",\"content\":\"You are Edge Walker on openvela. "
            "Answer in Simplified Chinese if the user uses Chinese, else English. "
            "2-4 short sentences. No emoji, no markdown. "

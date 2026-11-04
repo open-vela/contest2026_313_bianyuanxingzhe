@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.16)
+project(ew_render_preflight C)
+if(NOT DEFINED LVGL_SOURCE)
+  message(FATAL_ERROR "Pass the LVGL source from the firmware build tree")
+endif()
+set(LV_CONF_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lv_conf.h" CACHE STRING "" FORCE)
+set(LV_CONF_BUILD_DISABLE_EXAMPLES ON CACHE BOOL "" FORCE)
+set(LV_CONF_BUILD_DISABLE_DEMOS ON CACHE BOOL "" FORCE)
+set(LV_CONF_BUILD_DISABLE_THORVG_INTERNAL ON CACHE BOOL "" FORCE)
+add_subdirectory("${LVGL_SOURCE}" "${CMAKE_BINARY_DIR}/lvgl")
+add_executable(render_bench render_bench.c)
+target_link_libraries(render_bench PRIVATE lvgl m)
+

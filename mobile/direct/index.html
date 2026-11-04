@@ -1,0 +1,34 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>边缘行者直连实验</title>
+<style>body{font:16px system-ui;background:#eef4f2;color:#17372f;max-width:650px;margin:24px auto;padding:16px}section{background:white;border-radius:16px;padding:18px;margin:16px 0}input,button{font:inherit;padding:12px;box-sizing:border-box;border-radius:9px;border:1px solid #b9cfca;margin:5px 0}input{width:100%}button{background:#146f61;color:white}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px system-ui}small{color:#48685f}</style>
+<h1>边缘行者 · 直连实验</h1><p>手机 → ESP32 → 开发板。模型由开发板联网调用。</p>
+<section><label>临时连接码<input id="key" type="password" autocomplete="off" placeholder="输入本次连接码"></label><button id="connect" onclick="state()">连接并读取状态</button><pre id="status">尚未连接</pre></section>
+<section><h2>敏感度</h2><button onclick="profile('standard')">标准敏感度</button> <button onclick="profile('early')">提前预警 +25%</button><pre id="action">等待操作</pre><small>写入后读取实际档位确认；重启恢复标准。不控制蜂鸣器。</small></section>
+<section><h2>板端模型问答</h2><input id="question" placeholder="输入问题"><button id="ask" onclick="ask()">发送问题</button><pre id="reply">等待提问</pre></section>
+<section><h2>本次测量</h2><button id="bench" onclick="benchmark()">自动测延迟</button><pre id="summary">尚未测量</pre><pre id="history">尚无记录</pre><small>手机总往返包含无线传输；板端耗时单列。没有电脑转发。</small></section>
+<script>
+let sequence=0,session=Date.now().toString(36),history=[];
+function id(){return 'p'+session+'_'+(++sequence)}
+function record(item){history.push(item);history=history.slice(-30);document.querySelector('#history').textContent=JSON.stringify(history,null,2)}
+async function call(path,method='GET',body,requestId=id(),phase='interactive'){
+ let begin=performance.now(),control=new AbortController(),timer=setTimeout(()=>control.abort(),65000);
+ try{let r=await fetch(path,{method,headers:{'X-EW-Key':document.querySelector('#key').value,'X-EW-ID':requestId,'Content-Type':'text/plain'},body,signal:control.signal,cache:'no-store'});
+ let v=await r.json();v.phone_rtt_ms=Math.round(performance.now()-begin);if(!r.ok||!v.ok)throw Error(v.error||('HTTP '+r.status));
+ record({phase,path,id:requestId,phone_rtt_ms:v.phone_rtt_ms,board_elapsed_ms:v.board_elapsed_ms});return v;
+ }catch(e){record({phase,path,id:requestId,phone_rtt_ms:Math.round(performance.now()-begin),error:String(e&&e.message||e)});throw e
+ }finally{clearTimeout(timer)}
+}
+async function state(){try{let v=await call('/api/state');document.querySelector('#status').textContent=JSON.stringify(v.data,null,2)}catch(e){document.querySelector('#status').textContent='连接失败：'+e.message}}
+async function profile(value){try{let v=await call('/api/profile','POST',value);document.querySelector('#action').textContent='设备已确认：'+v.data.profile+'\n手机往返 '+v.phone_rtt_ms+' ms；板端 '+v.board_elapsed_ms+' ms';await state()}catch(e){document.querySelector('#action').textContent='未确认：'+e.message}}
+async function ask(){let button=document.querySelector('#ask');button.disabled=true;document.querySelector('#reply').textContent='开发板正在请求模型，敏感度操作仍可使用…';try{let v=await call('/api/ask','POST',document.querySelector('#question').value);document.querySelector('#reply').textContent=v.data.reply+'\n\n手机往返 '+v.phone_rtt_ms+' ms；板端 '+v.board_elapsed_ms+' ms'}catch(e){document.querySelector('#reply').textContent='问答未完成：'+e.message}finally{button.disabled=false}}
+async function benchmark(){let button=document.querySelector('#bench'),s=document.querySelector('#summary');button.disabled=true;s.textContent='正在测量，请等待…';let states=[],profiles=[],control,answer,mayNeedRestore=false,restore=null,error='';const median=a=>a.slice().sort((a,b)=>a-b)[Math.floor(a.length/2)];
+ try{
+ for(let i=0;i<5;i++){let v=await call('/api/state','GET',undefined,undefined,'state');states.push(v.phone_rtt_ms)}
+ for(let value of ['early','standard','early','standard','standard']){mayNeedRestore=true;let v=await call('/api/profile','POST',value,undefined,'profile');if(v.data.profile!==value)throw Error('档位读回不符');profiles.push(v.phone_rtt_ms)}
+ let model=call('/api/ask','POST','Reply only DIRECT_OK.',undefined,'model').then(v=>({value:v}),e=>({error:e}));await new Promise(r=>setTimeout(r,150));control=await call('/api/profile','POST','early',undefined,'control_during_model');restore=await call('/api/profile','POST','standard',undefined,'restore');if(restore.data.profile!=='standard')throw Error('标准档未恢复');mayNeedRestore=false;let modelResult=await model;if(modelResult.error)throw modelResult.error;answer=modelResult.value;
+ document.querySelector('#reply').textContent=answer.data.reply;
+ }catch(e){error=String(e&&e.message||e)}finally{
+ if(mayNeedRestore){try{restore=await call('/api/profile','POST','standard',undefined,'safety_restore');if(restore.data.profile!=='standard')throw Error('标准档读回不符')}catch(e){error+=(error?'；':'')+'安全恢复失败：'+String(e&&e.message||e)}}
+ button.disabled=false;
+ s.textContent=JSON.stringify({passed:!error&&!!answer,state_samples:states.length,state_median_ms:states.length?median(states):null,profile_samples:profiles.length,profile_median_ms:profiles.length?median(profiles):null,model_phone_ms:answer?answer.phone_rtt_ms:null,model_board_ms:answer?answer.board_elapsed_ms:null,control_during_model_ms:control?control.phone_rtt_ms:null,final_profile:restore&&restore.data?restore.data.profile:'unknown',error:error||undefined},null,2)
+ }}
+</script></html>

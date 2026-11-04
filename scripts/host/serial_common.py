@@ -15,9 +15,13 @@ DEFAULT_BAUD = 1_000_000
 
 
 def open_port(port: str = DEFAULT_PORT, timeout: float = 0.02) -> serial.Serial:
-    device = serial.Serial(port, DEFAULT_BAUD, timeout=timeout)
+    # Set both lines before opening: constructor(port=...) initially asserts
+    # them and can reset the board/USB bridge before the assignments below.
+    device = serial.Serial(port=None, baudrate=DEFAULT_BAUD, timeout=timeout)
     device.dtr = False
     device.rts = False
+    device.port = port
+    device.open()
     return device
 
 

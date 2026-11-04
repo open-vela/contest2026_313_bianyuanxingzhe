@@ -149,28 +149,49 @@ static void print_rx_blob(const char *buf, int n)
   }
 }
 
+/* AT responses are small. Independently bound work if the clock stalls or a
+ * broken UART keeps replaying bytes; neither buffer saturation nor activity
+ * may turn a finite command into an unbounded read loop. */
+#define EW_AT_RX_READ_LIMIT 8192u
+#define EW_AT_RX_BYTE_LIMIT (512u * 1024u)
+
+static int at_rx_limit_reached(uint32_t started, int total_ms,
+                                unsigned reads, unsigned bytes)
+{
+  return total_ms <= 0 ||
+         (uint32_t)(monotonic_ms() - started) >= (uint32_t)total_ms ||
+         reads >= EW_AT_RX_READ_LIMIT || bytes >= EW_AT_RX_BYTE_LIMIT;
+}
+
 static void at_drain_rx(int fd, int max_ms)
 {
   int spent = 0;
+  unsigned reads = 0;
+  unsigned bytes = 0;
+  uint32_t started = monotonic_ms();
 
-  while (spent < max_ms) {
+  while (spent < max_ms &&
+         !at_rx_limit_reached(started, max_ms, reads, bytes)) {
     char scratch[128];
     ssize_t r = read(fd, scratch, sizeof(scratch));
 
+    reads++;
     if (r > 0) {
-      spent = 0;
-      print_rx_blob(scratch, (int)r);
+      bytes += (unsigned)r;
     } else {
       usleep(20000);
       spent += 20;
     }
   }
+  if (bytes > 0) {
+    /* Drained content may include credentials or stale HTTP payloads. Only
+     * report the count once, rather than echoing an unbounded input stream. */
+    printf("[ew-at] drain discarded=%u bytes\n", bytes);
+  }
 }
 
 static int resp_ok(const char *s)
 {
-  size_t n;
-
   if (s == NULL) {
     return 0;
   }
@@ -180,13 +201,7 @@ static int resp_ok(const char *s)
   if (strncmp(s, "OK\r\n", 4) == 0) {
     return 1;
   }
-  n = strlen(s);
-  if (n >= 4 && strcmp(s + n - 4, "OK\r\n") == 0) {
-    return 1;
-  }
-  if (n >= 6 && strcmp(s + n - 6, "\r\nOK\r\n") == 0) {
-    return 1;
-  }
+  /* A suffix such as NOTOK is not an OK response line. */
   return 0;
 }
 
@@ -239,19 +254,25 @@ static int at_read(int fd, char *out, unsigned out_sz,
   unsigned n = 0;
   int idle = 0;
   int spent = 0;
+  unsigned reads = 0;
+  unsigned bytes = 0;
+  uint32_t started = monotonic_ms();
 
   if (out_sz == 0) {
     return -1;
   }
   out[0] = '\0';
-  while (idle < idle_ms && spent < total_ms) {
+  while (idle < idle_ms && spent < total_ms &&
+         !at_rx_limit_reached(started, total_ms, reads, bytes)) {
     char chunk[64];
     ssize_t r = read(fd, chunk, sizeof(chunk));
 
+    reads++;
     if (r > 0) {
       unsigned take = (unsigned)r;
       unsigned off = 0;
 
+      bytes += take;
       idle = 0;
       while (off < take) {
         if (n + 1 < out_sz) {
@@ -296,19 +317,25 @@ static int at_read_scan(int fd, char *out, unsigned out_sz, int total_ms)
   int idle = 0;
   int spent = 0;
   int saw_ok = 0;
+  unsigned reads = 0;
+  unsigned bytes = 0;
+  uint32_t started = monotonic_ms();
 
   if (out_sz == 0) {
     return -1;
   }
   out[0] = '\0';
-  while (spent < total_ms) {
+  while (spent < total_ms &&
+         !at_rx_limit_reached(started, total_ms, reads, bytes)) {
     char chunk[128];
     ssize_t r = read(fd, chunk, sizeof(chunk));
 
+    reads++;
     if (r > 0) {
       unsigned take = (unsigned)r;
       unsigned off = 0;
 
+      bytes += take;
       idle = 0;
       while (off < take) {
         if (n + 1 < out_sz) {
@@ -426,17 +453,45 @@ static void set_baud(int fd, speed_t code)
 }
 
 /* 取串口并加锁；失败返回 -1（已解锁）。成对调用 at_end()。 */
+static int at_lock(void)
+{
+  unsigned waited;
+  int rc;
+
+  /* A scan or HTTPS request may own the modem for tens of seconds. A new
+   * caller must fail as BUSY instead of stalling the UI/command queue. */
+  for (waited = 0; waited <= 500; waited += 10) {
+    rc = pthread_mutex_trylock(&g_at_mu);
+    if (rc == 0) {
+      return 0;
+    }
+    if (rc != EBUSY) {
+      errno = rc;
+      return -1;
+    }
+    if (waited < 500) {
+      usleep(10000);
+    }
+  }
+  errno = EBUSY;
+  return -1;
+}
+
 static int at_begin(void)
 {
   int fd;
 
-  pthread_mutex_lock(&g_at_mu);
+  if (at_lock() != 0) {
+    return -1;
+  }
 
   /* 必须 O_NONBLOCK：模组不回话时阻塞 read 会把调用线程永久挂住 */
   fd = open(EW_WIFI_AT_DEV, O_RDWR | O_NOCTTY | O_NONBLOCK);
   if (fd < 0) {
-    printf("[ew-at] open %s failed errno=%d\n", EW_WIFI_AT_DEV, errno);
+    int saved_errno = errno;
+    printf("[ew-at] open %s failed errno=%d\n", EW_WIFI_AT_DEV, saved_errno);
     pthread_mutex_unlock(&g_at_mu);
+    errno = saved_errno;
     return -1;
   }
 
@@ -456,8 +511,23 @@ static void at_end(int fd)
 static int probe_at(int fd)
 {
   char resp[128];
+  unsigned i;
+  unsigned printable = 0;
+  unsigned zero = 0;
+  int n;
 
-  (void)at_tx(fd, "AT", resp, sizeof(resp), 400, 900, 0);
+  n = at_tx(fd, "AT", resp, sizeof(resp), 400, 900, 0);
+  for (i = 0; n > 0 && i < (unsigned)n; i++) {
+    unsigned char byte = (unsigned char)resp[i];
+    if (byte >= 32u && byte <= 126u) printable++;
+    if (byte == 0) zero++;
+  }
+  /* Counts and protocol markers only: never log a stale HTTP payload or key.
+   * Emit after receiving so console TX cannot mask the UART reply IRQ. */
+  printf("[ew-at] probe rx=%d ok=%d printable=%u zero=%u at_echo=%d ok_text=%d\n",
+         n, resp_ok(resp) ? 1 : 0, printable, zero,
+         n > 0 && strstr(resp, "AT") != NULL ? 1 : 0,
+         n > 0 && strstr(resp, "OK") != NULL ? 1 : 0);
   return resp_ok(resp) ? 0 : -1;
 }
 
@@ -492,17 +562,30 @@ static int sync_baud(int fd)
 #endif
 }
 
-/* 轻量握手：扫描/查询用，失败时不 RST（避免扫到一半被复位）。 */
-static int at_wake_light(int fd)
+static int at_station_setup(int fd)
 {
   char resp[160];
 
+  if (at_tx(fd, "ATE0", resp, sizeof(resp), 500, 800, 0) <= 0 ||
+      !resp_ok(resp) || resp_fail(resp)) {
+    printf("[ew-at] echo setup failed\n");
+    return -1;
+  }
+  if (at_tx(fd, "AT+CWMODE=1", resp, sizeof(resp), 800, 1500, 0) <= 0 ||
+      !resp_ok(resp) || resp_fail(resp)) {
+    printf("[ew-at] station setup failed\n");
+    return -1;
+  }
+  return 0;
+}
+
+/* 轻量握手：扫描/查询用，失败时不 RST（避免扫到一半被复位）。 */
+static int at_wake_light(int fd)
+{
   if (sync_baud(fd) != 0) {
     return -1;
   }
-  (void)at_tx(fd, "ATE0", resp, sizeof(resp), 500, 800, 0);
-  (void)at_tx(fd, "AT+CWMODE=1", resp, sizeof(resp), 800, 1500, 0);
-  return 0;
+  return at_station_setup(fd);
 }
 
 /* 握手 + 关回显 + 站点模式。0 = 模组可用。 */
@@ -517,17 +600,21 @@ static int at_wake(int fd)
     (void)at_tx(fd, "AT+RST", resp, sizeof(resp), 1500, 2500, 0);
     usleep(1500000);
     if (sync_baud(fd) != 0) {
-      printf("[ew-at] silent at every baud; check PA24->ESP RX, "
-             "PA25->ESP TX, common GND, and that ESP runs AT firmware\n");
+#if EW_AT_BAUD_FIXED
+      printf("[ew-at] no AT reply at fixed 115200 after bounded recovery\n");
+#else
+      printf("[ew-at] no AT reply at supported baud rates after bounded recovery\n");
+#endif
       fflush(stdout);
       return -1;
     }
   }
 
+  if (at_station_setup(fd) != 0) {
+    return -1;
+  }
   printf("[ew-at] wake ok @%u baud\n", k_baud_name[g_baud_idx]);
   fflush(stdout);
-  (void)at_tx(fd, "ATE0", resp, sizeof(resp), 500, 800, 0);
-  (void)at_tx(fd, "AT+CWMODE=1", resp, sizeof(resp), 800, 1500, 0);
   return 0;
 }
 
@@ -863,6 +950,8 @@ static int inet_probe(int fd)
   return -1;
 }
 
+#include "ew_wifi_direct.inc"
+
 ew_wifi_state_t ew_wifi_probe(int check_inet, char *ip, unsigned ip_sz)
 {
   char resp[384];
@@ -870,14 +959,21 @@ ew_wifi_state_t ew_wifi_probe(int check_inet, char *ip, unsigned ip_sz)
   ew_wifi_state_t st;
   int fd;
 
+  if (direct_cached_probe(ip, ip_sz)) return EW_WIFI_JOINED;
+
   if (ip != NULL && ip_sz > 0) {
     ip[0] = '\0';
   }
 
   fd = at_begin();
   if (fd < 0) {
-    ew_net_state_publish(EW_NET_LINK_DOWN, NULL);
-    ew_net_state_error(EW_NET_ERR_AT_BUSY);
+    if (errno == EBUSY) {
+      /* Contention is not evidence of a disconnected modem. */
+      ew_net_state_error(EW_NET_ERR_AT_BUSY);
+    } else {
+      ew_net_state_publish(EW_NET_LINK_DOWN, NULL);
+      ew_net_state_error(EW_NET_ERR_RESPONSE);
+    }
     return EW_WIFI_DOWN;
   }
   if (at_wake_light(fd) != 0) {
@@ -1311,6 +1407,9 @@ int ew_wifi_scan(ew_wifi_ap_t *aps, int max)
 
   fd = at_begin();
   if (fd < 0) {
+    if (errno == EBUSY) {
+      result = EW_WIFI_SCAN_BUSY;
+    }
     goto done;
   }
   if (at_wake_light(fd) != 0) {
@@ -1617,6 +1716,10 @@ ew_wifi_http_result_t ew_wifi_http_ssl_post(const char *host, unsigned port,
     port = 443;
   }
 
+  if (direct_active()) {
+    return direct_ssl_post(host, port, path, api_key, json_body, resp, resp_sz);
+  }
+
   hlen = (unsigned)snprintf(http, sizeof(http),
                             "POST %s HTTP/1.1\r\n"
                             "Host: %s\r\n"
@@ -1700,6 +1803,11 @@ ew_wifi_http_result_t ew_wifi_http_ssl_post(const char *host, unsigned port,
 }
 
 #else /* !__NuttX__ —— host smoke 用的空实现 */
+
+int ew_wifi_direct_start(const char *code, unsigned port)
+{ (void)code; (void)port; return -1; }
+void ew_wifi_direct_stop(void) {}
+void ew_wifi_direct_status(void) { printf("[ew-direct] host stub\n"); }
 
 int ew_wifi_at_cmd(const char *at_line)
 {

@@ -9,6 +9,7 @@
 #include "ew_serial_ctl.h"
 #include "ew_mirror.h"
 #include "ew_agent.h"
+#include "ew_safety.h"
 #include "ew_llm.h"
 #include "alert_lcd.h"
 #include "ew_pinyin.h"
@@ -1277,6 +1278,7 @@ static void page_pump(void)
   uint32_t idle;
 
   hw_kbd_poll();
+  alert_lcd_service_tick();
   ew_serial_ctl_poll();
   ew_mirror_tick();
   page_tick(g_page);
@@ -1292,6 +1294,10 @@ static void page_pump(void)
 void ew_ui_loop(int start_in_chat)
 {
 #if defined(__NuttX__) && defined(CONFIG_LV_USE_NUTTX)
+  int safety_result = ew_safety_start();
+  if (safety_result != 0) {
+    printf("[ew-safety] start failed result=%d\n", safety_result);
+  }
   if (!lv_is_initialized()) {
     printf("[ew-ui] LVGL not initialized\n");
     return;

@@ -12,13 +12,28 @@
 #define EDGE_WALKER_EW_AGENT_H
 
 #include "alert_output.h"
+#include "ew_ld2451.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* 开机安装 approach-warn Skill、注册 Tool 元数据 */
+/* 开机安装 approach-warn Skill；独立 ai_agent 注册由构建脚本注入。 */
 void ew_agent_init(void);
+
+/* Selected Stage1 idea: trace metadata stays separate from A's decision.
+ * Numeric IDs and EWA1 IPC stay compatible with the hardened implementation. */
+typedef enum {
+  EW_EVENT_SOURCE_RADAR, EW_EVENT_SOURCE_FAKE, EW_EVENT_SOURCE_MANUAL,
+  EW_EVENT_SOURCE_SERIAL, EW_EVENT_SOURCE_AGENT
+} ew_event_source_t;
+const char *ew_event_source_name(ew_event_source_t source);
+unsigned long ew_agent_next_event_id(void);
+int ew_agent_emit_decision(const ew_decision_t *decision,
+                           ew_event_source_t source);
+int ew_agent_emit_decision_event(const ew_decision_t *decision,
+                                 ew_event_source_t source,
+                                 unsigned long event_id);
 
 /*
  * 主动触发 approach_alert Tool（LLM 不参与判距）。
